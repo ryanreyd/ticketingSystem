@@ -7,6 +7,11 @@ exports.getUsers = async (req, res) => {
   res.json(users);
 };
 
+//get current loged user
+exports.getMe = (req, res) => {
+  res.json(req.user);
+};
+
 // UPDATE user
 exports.updateUser = async (req, res) => {
   try {

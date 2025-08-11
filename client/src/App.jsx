@@ -1,6 +1,9 @@
 import React, { useContext } from "react";
 import LoginPage from "./pages/loginPage";
+import RegisterPage from "./pages/RegisterPage";
 import Dashboard from "./pages/Dashboard";
+import TicketManagement from "./pages/TicketManagement";
+import Layout from "./sections/Layout";
 import { AuthContext } from "./context/AuthContext";
 import {
   BrowserRouter as Router,
@@ -20,8 +23,16 @@ const App = () => {
           element={!token ? <LoginPage /> : <Navigate to="/dashboard" />}
         />
         <Route
-          path="/dashboard"
-          element={token ? <Dashboard /> : <Navigate to="/login" />}
+          path="/register"
+          element={!token ? <RegisterPage /> : <Navigate to="/dashboard" />}
+        />
+        <Route element={token ? <Layout /> : <Navigate to="/login" />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/ticketsManagement" element={<TicketManagement />} />
+        </Route>
+        <Route
+          path="*"
+          element={<Navigate to={token ? "/dashboard" : "/login"} />}
         />
       </Routes>
     </Router>
