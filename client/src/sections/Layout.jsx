@@ -27,7 +27,7 @@ const Layout = () => {
     return type === "button" ? (
       <button
         onClick={onClick}
-        className="flex items-center gap-3 text-gray-670 hover:text-blue-500"
+        className="flex items-center gap-3 text-gray-670 hover:text-blue-500 py-1"
       >
         {icon}
         {!collapsed && <span>{label}</span>}
@@ -37,8 +37,8 @@ const Layout = () => {
         to={link}
         className={
           isActive
-            ? `flex items-center text-blue-500 gap-3  hover:text-blue-500`
-            : `flex items-center gap-3 text-gray-700 hover:text-blue-500`
+            ? `flex items-center text-blue-500 gap-3  hover:text-blue-500 py-1`
+            : `flex items-center gap-3 text-gray-700 hover:text-blue-500 py-1`
         }
       >
         {icon}
@@ -83,7 +83,7 @@ const Layout = () => {
           <MenuItem
             label="Users Management"
             type="link"
-            link="/userManagement"
+            link="/usersManagement"
             icon={<FiUsers />}
             isActive={location.pathname === "/userManagement"}
           />
@@ -99,14 +99,14 @@ const Layout = () => {
           className={
             collapsed
               ? `hidden`
-              : `flex flex-col w-full h-1/5 bg-neutral-100 absolute bottom-0 gap-4 items-center justify-center`
+              : `flex flex-col w-full h-1/5 bg-white absolute bottom-0 gap-4 items-center justify-center`
           }
         >
-          <div className="h-[100px] w-[100px] flex items-center justify-center rounded-full bg-neutral-300 shadow-2xl ">
+          <div className="h-[100px] w-[100px] flex items-center justify-center rounded-full bg-white shadow-2xl ">
             <FiUser size={30} color="#636363" />
           </div>
           <div className="text-center">
-            <h1 className="font-semibold">{user?.name}</h1>
+            <h1 className="font-semibold">{user?.fullname}</h1>
             <p className="text-sm font-thin">
               {user?.role
                 ? user.role.charAt(0).toUpperCase() + user.role.slice(1)

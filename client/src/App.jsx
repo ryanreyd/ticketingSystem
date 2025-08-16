@@ -3,6 +3,7 @@ import LoginPage from "./pages/loginPage";
 import RegisterPage from "./pages/RegisterPage";
 import Dashboard from "./pages/Dashboard";
 import TicketManagement from "./pages/TicketManagement";
+import UserManagement from "./pages/UserManagement";
 import Layout from "./sections/Layout";
 import { AuthContext } from "./context/AuthContext";
 import {
@@ -29,6 +30,7 @@ const App = () => {
         <Route element={token ? <Layout /> : <Navigate to="/login" />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/ticketsManagement" element={<TicketManagement />} />
+          <Route path="/usersManagement" element={<UserManagement />} />
         </Route>
         <Route
           path="*"

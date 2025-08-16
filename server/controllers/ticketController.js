@@ -2,7 +2,8 @@ const Ticket = require("../models/ticketModel");
 
 // GET all tickets
 exports.getTickets = async (req, res) => {
-  const tickets = await Ticket.find().populate("createdBy", "name");
+  const tickets = await Ticket.find().populate("createdBy", "fullname");
+  if (!tickets) return res.status(404).json({ message: "Ticket not found" });
   res.json(tickets);
 };
 

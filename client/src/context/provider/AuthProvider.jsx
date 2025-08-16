@@ -6,10 +6,30 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [user, setUser] = useState(null);
 
+  const register = async (formData) => {
+    console.log(formData);
+
+    try {
+      const res = await axiosClient.post("/auth/register", formData);
+      const newToken = res.data?.token;
+
+      if (newToken) {
+        login(newToken);
+        return { success: true, token: newToken };
+      } else {
+        console.error("Registration succeeded but no token returned");
+      }
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || "Registration failed",
+      };
+    }
+  };
+
   const login = (newToken) => {
     setToken(newToken);
     localStorage.setItem("token", newToken);
-    console.log(user);
   };
 
   const logout = () => {
@@ -35,7 +55,7 @@ export const AuthProvider = ({ children }) => {
     getUser();
   }, [token]);
 
-  const value = { token, login, logout, user, axios: axiosClient };
+  const value = { token, register, login, logout, user, axios: axiosClient };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

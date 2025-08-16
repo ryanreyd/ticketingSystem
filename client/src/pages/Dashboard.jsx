@@ -47,7 +47,7 @@ const Dashboard = () => {
         coverage={90}
         shape="square"
       />
-      <div className="max-h-screen">
+      <div className="z-20 max-h-screen">
         <h1 className="text-xl font-bold mb-4 text-neutral-600">
           Your Dashboard
         </h1>
