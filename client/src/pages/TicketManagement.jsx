@@ -10,7 +10,6 @@ const TicketManagement = () => {
       try {
         const data = await getTickets();
         setTickets(data);
-        console.log(data);
       } catch (err) {
         console.error("Failed to load tickets", err);
       }

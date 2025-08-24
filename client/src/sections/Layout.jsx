@@ -23,7 +23,10 @@ const Layout = () => {
     onClick,
     icon,
     isActive,
+    className,
   }) => {
+    const linkStyle = "flex items-center gap-3 hover:text-blue-500 py-1";
+
     return type === "button" ? (
       <button
         onClick={onClick}
@@ -37,8 +40,8 @@ const Layout = () => {
         to={link}
         className={
           isActive
-            ? `flex items-center text-blue-500 gap-3  hover:text-blue-500 py-1`
-            : `flex items-center gap-3 text-gray-700 hover:text-blue-500 py-1`
+            ? ` text-blue-500  ${linkStyle} ${className}`
+            : ` ${linkStyle} ${className}`
         }
       >
         {icon}
@@ -86,6 +89,7 @@ const Layout = () => {
             link="/usersManagement"
             icon={<FiUsers />}
             isActive={location.pathname === "/userManagement"}
+            className={user?.role === "admin" ? "" : "hidden"}
           />
           <MenuItem
             label="Logout"

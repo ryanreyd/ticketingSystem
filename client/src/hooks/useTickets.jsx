@@ -1,18 +1,21 @@
-import { useContext } from "react";
+import { useContext, useCallback, useMemo } from "react";
 import { AuthContext } from "../context/AuthContext";
 
 export const useTickets = () => {
   const { axios, token } = useContext(AuthContext);
-  const authorizeAccess = {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  };
+  const authorizeAccess = useMemo(
+    () => ({
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+    [token]
+  );
 
-  const getTickets = async () => {
+  const getTickets = useCallback(async () => {
     const res = await axios.get("/tickets", authorizeAccess);
     return res.data;
-  };
+  }, [axios, authorizeAccess]);
 
   const createTicket = async (ticketData) => {
     const res = await axios.post("/tickets", authorizeAccess, ticketData);
