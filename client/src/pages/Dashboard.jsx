@@ -6,7 +6,7 @@ import Card from "../components/Card";
 import PatternBackground from "../components/PatternedBackground";
 
 const Dashboard = () => {
-  const { token } = useContext(AuthContext);
+  const { token, user } = useContext(AuthContext);
 
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,7 +21,7 @@ const Dashboard = () => {
           },
         });
 
-        setTickets(res.data); // assuming response is array of tickets
+        setTickets(res.data.tickets || res.data);
       } catch (err) {
         console.error("Error fetching tickets:", err);
         setError("Failed to load tickets.");
@@ -51,9 +51,16 @@ const Dashboard = () => {
         <h1 className="text-xl font-bold mb-4 text-neutral-600">
           Your Dashboard
         </h1>
+
+        {user && !user.profileCompleted && (
+          <div className="mb-4 bg-amber-100 border border-amber-300 text-amber-700 px-4 py-2 rounded-md text-sm">
+            Please complete your profile with job position, department, branch, and Viber number.
+          </div>
+        )}
+
         <Card label="Number of Tickets">
           <h1 className="text-3xl font-semibold text-neutral-600">
-            {tickets.length}
+            {Array.isArray(tickets) ? tickets.length : 0}
           </h1>
         </Card>
       </div>

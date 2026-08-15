@@ -1,11 +1,11 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import Card from "../components/Card";
 import TextInput from "../components/TextInput";
 import Button from "../components/Buttons";
 import { AuthContext } from "../context/AuthContext";
 import PatternBackground from "../components/PatternedBackground";
-import { CheckCircle, XCircle } from "react-feather"; // small icon lib
-import RadioGroup from "../components/RadioGroup";
+import { FiCheckCircle, FiXCircle, FiLoader } from "react-icons/fi";
+import axiosClient from "../api/axiosClient";
 
 const RegisterPage = () => {
   const { register } = useContext(AuthContext);
@@ -15,12 +15,38 @@ const RegisterPage = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "user", // default role
+    departmentId: "",
+    branchId: "",
+    viberPhone: "",
   });
 
+  const [departments, setDepartments] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [loadingOptions, setLoadingOptions] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState({ hasError: false, message: "" });
 
-  // Password requirement states
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [deptRes, branchRes] = await Promise.all([
+          axiosClient.get("/departments?active=true"),
+          axiosClient.get("/branches?active=true"),
+        ]);
+        setDepartments(deptRes.data);
+        setBranches(branchRes.data);
+      } catch {
+        setError({
+          hasError: true,
+          message: "Failed to load registration options. Please refresh.",
+        });
+      } finally {
+        setLoadingOptions(false);
+      }
+    };
+    fetchOptions();
+  }, []);
+
   const passwordRules = {
     minLength: formData.password.length >= 6,
     hasLetter: /[A-Za-z]/.test(formData.password),
@@ -62,8 +88,10 @@ const RegisterPage = () => {
       });
     }
 
+    setSubmitting(true);
+
     try {
-      const result = await register(formData); // ✅ pass the whole object
+      const result = await register(formData);
 
       if (!result.success) {
         setError({ hasError: true, message: result.message });
@@ -73,22 +101,32 @@ const RegisterPage = () => {
         hasError: true,
         message: err.response?.data?.message || "Registration failed.",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const renderRule = (label, met) => (
     <div className="flex items-center text-sm">
       {met ? (
-        <CheckCircle size={16} className="text-green-500 mr-1" />
+        <FiCheckCircle size={16} className="text-green-500 mr-1" />
       ) : (
-        <XCircle size={16} className="text-red-400 mr-1" />
+        <FiXCircle size={16} className="text-red-400 mr-1" />
       )}
       <span className={met ? "text-green-600" : "text-red-400"}>{label}</span>
     </div>
   );
 
+  if (loadingOptions) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <FiLoader className="animate-spin text-3xl text-blue-500" />
+      </div>
+    );
+  }
+
   return (
-    <div className="z-0 relative min-h-screen flex-col flex justify-center items-center">
+    <div className="z-0 relative min-h-screen flex-col flex justify-center items-center py-8">
       <PatternBackground
         lineColor={error.hasError ? "#C4332E" : "#B6B6B6"}
         lineThickness={1}
@@ -100,7 +138,7 @@ const RegisterPage = () => {
       />
 
       {error.hasError && (
-        <div className="z-20 bg-red-200 p-2 rounded-md border border-red-300 mb-5 max-w-[350px] overflow-hidden shadow-lg text-red-700 font-semibold duration-300">
+        <div className="z-20 bg-red-200 p-2 rounded-md border border-red-300 mb-5 max-w-87.5 overflow-hidden shadow-lg text-red-700 font-semibold duration-300">
           <h1>{error.message}</h1>
         </div>
       )}
@@ -113,14 +151,66 @@ const RegisterPage = () => {
             value={formData.fullname}
             onChange={handleChange}
             placeholder="Enter your full name"
+            required
           />
           <TextInput
-            label="Email"
+            label="Company Email"
             name="email"
             type="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="Enter your email"
+            placeholder="name@company.com"
+            required
+          />
+
+          <div className="mb-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Department <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="departmentId"
+              value={formData.departmentId}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              required
+            >
+              <option value="">Select department</option>
+              {departments.map((dept) => (
+                <option key={dept._id} value={dept._id}>
+                  {dept.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mb-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Branch <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="branchId"
+              value={formData.branchId}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              required
+            >
+              <option value="">Select branch</option>
+              {branches.map((branch) => (
+                <option key={branch._id} value={branch._id}>
+                  {branch.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <TextInput
+            label="Viber Phone Number"
+            name="viberPhone"
+            type="tel"
+            value={formData.viberPhone}
+            onChange={handleChange}
+            placeholder="09171234567"
+            required
           />
           <TextInput
             label="Password"
@@ -128,10 +218,10 @@ const RegisterPage = () => {
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="Enter your password"
+            placeholder="Min 6 chars, letter + number"
+            required
           />
 
-          {/* Password requirements */}
           <div className="mt-2 mb-4 space-y-1">
             {renderRule("At least 6 characters", passwordRules.minLength)}
             {renderRule("Contains a letter", passwordRules.hasLetter)}
@@ -146,25 +236,17 @@ const RegisterPage = () => {
             value={formData.confirmPassword}
             onChange={handleChange}
             placeholder="Re-enter your password"
+            required
           />
 
-          <form>
-            <RadioGroup
-              label="Role"
-              name="role"
-              value={formData.role}
-              className=""
-              options={[
-                { value: "user", label: "User" },
-                { value: "admin", label: "Admin" },
-                { value: "support", label: "Support" },
-              ]}
-              onChange={handleChange}
-            />
-          </form>
-
-          <Button className="mt-5" type="submit">
-            Create
+          <Button className="mt-5 w-full" type="submit" disabled={submitting}>
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <FiLoader className="animate-spin" /> Creating account...
+              </span>
+            ) : (
+              "Create Account"
+            )}
           </Button>
         </Card>
       </form>

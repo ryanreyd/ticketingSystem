@@ -1,23 +1,24 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const auth = require('../middleware/authMiddleware');
+const auth = require("../middleware/authMiddleware");
+const role = require("../middleware/roleMiddleware");
 const {
   getTickets,
   getTicketById,
   createTicket,
   updateTicket,
   deleteTicket,
-} = require('../controllers/ticketController');
+} = require("../controllers/ticketController");
 
 router.use(auth);
 
-router.route('/')
+router.route("/")
   .get(getTickets)
   .post(createTicket);
 
-router.route('/:id')
+router.route("/:id")
   .get(getTicketById)
   .put(updateTicket)
-  .delete(deleteTicket);
+  .delete(role("admin"), deleteTicket);
 
 module.exports = router;

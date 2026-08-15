@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 
 const ticketSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true },
-    description: { type: String },
+    title: { type: String, required: true, trim: true },
+    description: { type: String, trim: true },
     status: {
       type: String,
       enum: ["open", "in progress", "resolved", "closed"],
@@ -21,15 +21,20 @@ const ticketSchema = new mongoose.Schema(
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // references a user
-      required: false,
+      ref: "User",
+      required: true,
+      index: true,
     },
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // support staff/admin
+      ref: "User",
     },
   },
   { timestamps: true }
 );
+
+ticketSchema.index({ status: 1 });
+ticketSchema.index({ priority: 1 });
+ticketSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model("Ticket", ticketSchema);
