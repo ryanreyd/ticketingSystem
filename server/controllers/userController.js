@@ -7,11 +7,15 @@ const mongoose = require("mongoose");
 
 exports.getUsers = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, department, branch } = req.query;
+    const { page = 1, limit = 20, department, branch, search } = req.query;
     const filter = {};
 
     if (department) filter.department = department;
     if (branch) filter.branch = branch;
+    if (search) {
+      const regex = new RegExp(search, "i");
+      filter.$or = [{ fullname: regex }, { email: regex }];
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 

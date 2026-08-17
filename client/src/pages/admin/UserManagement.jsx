@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useContext } from "react";
+import { useEffect, useState, useCallback, useContext, memo } from "react";
 import { useUsers } from "../../hooks/useUsers";
 import { AuthContext } from "../../context/AuthContext";
 import Modal from "../../components/Modal";
@@ -11,17 +11,26 @@ import Button from "../../components/Buttons";
 import TextInput from "../../components/TextInput";
 import DropdownMenu from "../../components/DropdownMenu";
 import axiosClient from "../../api/axiosClient";
-import { FiPlus, FiEye, FiEdit2, FiKey, FiPower, FiTrash2 } from "react-icons/fi";
+import {
+  FiPlus,
+  FiEye,
+  FiEdit2,
+  FiKey,
+  FiPower,
+  FiTrash2,
+} from "react-icons/fi";
 import { ROLES } from "../../constants/roles";
 
 const UserManagement = () => {
   const { user } = useContext(AuthContext);
   const { getUsers, createUser, updateUser, deleteUser } = useUsers();
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
 
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -63,7 +72,7 @@ const UserManagement = () => {
   };
 
   const fetchUsers = useCallback(async () => {
-    setLoading(true);
+    setIsFetching(true);
     setError("");
     try {
       const params = { page, limit: 10 };
@@ -76,7 +85,8 @@ const UserManagement = () => {
     } catch (err) {
       setError(err.response?.data?.message || "Failed to load users.");
     } finally {
-      setLoading(false);
+      setIsFetching(false);
+      setInitialLoading(false);
     }
   }, [getUsers, page, roleFilter, search]);
 
@@ -85,13 +95,20 @@ const UserManagement = () => {
   }, []);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
-  const handleSearch = (value) => {
-    setSearch(value);
-    setPage(1);
-  };
+  const handleSearch = useCallback((value) => {
+    setSearchInput(value);
+  }, []);
 
   const resetForm = () => {
     setFormData({
@@ -146,7 +163,10 @@ const UserManagement = () => {
       setToast({ message: "User deactivated successfully", type: "success" });
       fetchUsers();
     } catch (err) {
-      setToast({ message: err.response?.data?.message || "Failed to deactivate user", type: "error" });
+      setToast({
+        message: err.response?.data?.message || "Failed to deactivate user",
+        type: "error",
+      });
     }
   };
 
@@ -156,7 +176,10 @@ const UserManagement = () => {
       setToast({ message: "User activated successfully", type: "success" });
       fetchUsers();
     } catch (err) {
-      setToast({ message: err.response?.data?.message || "Failed to activate user", type: "error" });
+      setToast({
+        message: err.response?.data?.message || "Failed to activate user",
+        type: "error",
+      });
     }
   };
 
@@ -169,7 +192,10 @@ const UserManagement = () => {
       setToast({ message: "User created successfully", type: "success" });
       setPage(1);
     } catch (err) {
-      setToast({ message: err.response?.data?.message || "Failed to create user", type: "error" });
+      setToast({
+        message: err.response?.data?.message || "Failed to create user",
+        type: "error",
+      });
     }
   };
 
@@ -184,7 +210,10 @@ const UserManagement = () => {
       setSelectedUser(null);
       setToast({ message: "User updated successfully", type: "success" });
     } catch (err) {
-      setToast({ message: err.response?.data?.message || "Failed to update user", type: "error" });
+      setToast({
+        message: err.response?.data?.message || "Failed to update user",
+        type: "error",
+      });
     }
   };
 
@@ -196,7 +225,10 @@ const UserManagement = () => {
       setSelectedUser(null);
       setToast({ message: "User deleted successfully", type: "success" });
     } catch (err) {
-      setToast({ message: err.response?.data?.message || "Failed to delete user", type: "error" });
+      setToast({
+        message: err.response?.data?.message || "Failed to delete user",
+        type: "error",
+      });
     }
   };
 
@@ -210,17 +242,25 @@ const UserManagement = () => {
       setResetPassword("");
       setToast({ message: "Password reset successfully", type: "success" });
     } catch (err) {
-      setToast({ message: err.response?.data?.message || "Failed to reset password", type: "error" });
+      setToast({
+        message: err.response?.data?.message || "Failed to reset password",
+        type: "error",
+      });
     }
   };
 
   const renderFormFields = () => (
-    <form onSubmit={selectedUser ? handleEdit : handleCreate} className="space-y-4">
+    <form
+      onSubmit={selectedUser ? handleEdit : handleCreate}
+      className="space-y-4"
+    >
       <TextInput
         label="Fullname"
         name="fullname"
         value={formData.fullname}
-        onChange={(e) => setFormData((p) => ({ ...p, fullname: e.target.value }))}
+        onChange={(e) =>
+          setFormData((p) => ({ ...p, fullname: e.target.value }))
+        }
         placeholder="Enter full name"
         required
       />
@@ -238,17 +278,25 @@ const UserManagement = () => {
         name="password"
         type="password"
         value={formData.password}
-        onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
-        placeholder={selectedUser ? "Leave blank to keep current" : "Min 6 chars"}
+        onChange={(e) =>
+          setFormData((p) => ({ ...p, password: e.target.value }))
+        }
+        placeholder={
+          selectedUser ? "Leave blank to keep current" : "Min 6 chars"
+        }
         required={!selectedUser}
       />
       {user?.role === ROLES.ADMIN && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Role
+          </label>
           <select
             name="role"
             value={formData.role}
-            onChange={(e) => setFormData((p) => ({ ...p, role: e.target.value }))}
+            onChange={(e) =>
+              setFormData((p) => ({ ...p, role: e.target.value }))
+            }
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-300 focus:border"
           >
             <option value={ROLES.USER}>User</option>
@@ -258,11 +306,15 @@ const UserManagement = () => {
         </div>
       )}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Department
+        </label>
         <select
           name="departmentId"
           value={formData.departmentId}
-          onChange={(e) => setFormData((p) => ({ ...p, departmentId: e.target.value }))}
+          onChange={(e) =>
+            setFormData((p) => ({ ...p, departmentId: e.target.value }))
+          }
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-300 focus:border"
         >
           <option value="">Select department</option>
@@ -274,11 +326,15 @@ const UserManagement = () => {
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Branch
+        </label>
         <select
           name="branchId"
           value={formData.branchId}
-          onChange={(e) => setFormData((p) => ({ ...p, branchId: e.target.value }))}
+          onChange={(e) =>
+            setFormData((p) => ({ ...p, branchId: e.target.value }))
+          }
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-300 focus:border"
         >
           <option value="">Select branch</option>
@@ -293,11 +349,20 @@ const UserManagement = () => {
         label="Viber Phone Number"
         name="viberPhone"
         value={formData.viberPhone}
-        onChange={(e) => setFormData((p) => ({ ...p, viberPhone: e.target.value }))}
+        onChange={(e) =>
+          setFormData((p) => ({ ...p, viberPhone: e.target.value }))
+        }
         placeholder="09171234567"
       />
       <div className="flex justify-end gap-3 pt-2">
-        <Button type="button" onClick={() => { setIsCreateOpen(false); setIsEditOpen(false); }} className="bg-gray-300 text-gray-700 hover:bg-gray-400">
+        <Button
+          type="button"
+          onClick={() => {
+            setIsCreateOpen(false);
+            setIsEditOpen(false);
+          }}
+          className="bg-gray-300 text-gray-700 hover:bg-gray-400"
+        >
           Cancel
         </Button>
         <Button type="submit">{selectedUser ? "Update" : "Create"}</Button>
@@ -305,7 +370,7 @@ const UserManagement = () => {
     </form>
   );
 
-  const ActionMenu = ({ targetUser }) => (
+  const ActionMenu = memo(({ targetUser }) => (
     <DropdownMenu
       align="right"
       trigger={
@@ -316,40 +381,76 @@ const UserManagement = () => {
         </button>
       }
     >
-      <button onClick={() => openView(targetUser)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+      <button
+        onClick={() => openView(targetUser)}
+        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+      >
         <FiEye size={16} className="text-gray-400" />
         <span>View Profile</span>
       </button>
-      <button onClick={() => openEdit(targetUser)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+      <button
+        onClick={() => openEdit(targetUser)}
+        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+      >
         <FiEdit2 size={16} className="text-gray-400" />
         <span>Edit User</span>
       </button>
-      <button onClick={() => openReset(targetUser)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+      <button
+        onClick={() => openReset(targetUser)}
+        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+      >
         <FiKey size={16} className="text-gray-400" />
         <span>Reset Password</span>
       </button>
       {user?.role === ROLES.ADMIN && (
-        <button onClick={() => targetUser.isActive === false ? handleActivate(targetUser) : handleDeactivate(targetUser)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-          <FiPower size={16} className={targetUser.isActive === false ? "text-green-500" : "text-amber-500"} />
-          <span>{targetUser.isActive === false ? "Activate User" : "Deactivate User"}</span>
+        <button
+          onClick={() =>
+            targetUser.isActive === false
+              ? handleActivate(targetUser)
+              : handleDeactivate(targetUser)
+          }
+          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <FiPower
+            size={16}
+            className={
+              targetUser.isActive === false
+                ? "text-green-500"
+                : "text-amber-500"
+            }
+          />
+          <span>
+            {targetUser.isActive === false
+              ? "Activate User"
+              : "Deactivate User"}
+          </span>
         </button>
       )}
       <div className="border-t border-gray-100 my-1 mx-2" />
       {user?.role === ROLES.ADMIN && (
-        <button onClick={() => openDelete(targetUser)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+        <button
+          onClick={() => openDelete(targetUser)}
+          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+        >
           <FiTrash2 size={16} className="text-red-400" />
           <span>Delete User</span>
         </button>
       )}
     </DropdownMenu>
-  );
+  ));
 
-  if (loading) return <p className="p-6">Loading users...</p>;
+  if (initialLoading) return <p className="p-6">Loading users...</p>;
   if (error) return <p className="p-6 text-red-600">{error}</p>;
 
   return (
     <div className="p-6">
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
 
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Users</h1>
@@ -365,10 +466,16 @@ const UserManagement = () => {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <SearchBar value={search} onChange={handleSearch} placeholder="Search by name or email..." />
+        <SearchBar
+          onSearch={handleSearch}
+          placeholder="Search by name or email..."
+        />
         <select
           value={roleFilter}
-          onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setRoleFilter(e.target.value);
+            setPage(1);
+          }}
           className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-300 focus:border"
         >
           <option value="">All roles</option>
@@ -378,34 +485,70 @@ const UserManagement = () => {
         </select>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow overflow-hidden relative">
+        {isFetching && (
+          <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10 rounded-lg">
+            <svg className="animate-spin h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Viber</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  User
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Role
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Department
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Branch
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Viber
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                  <td
+                    colSpan={7}
+                    className="px-6 py-12 text-center text-gray-500"
+                  >
                     No users found.
                   </td>
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user._id} className={user.isActive === false ? "opacity-60 bg-gray-50" : "hover:bg-gray-50 transition-colors"}>
+                  <tr
+                    key={user._id}
+                    className={
+                      user.isActive === false
+                        ? "opacity-60 bg-gray-50"
+                        : "hover:bg-gray-50 transition-colors"
+                    }
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{user.fullname}</div>
-                        <div className="text-sm text-gray-500">{user.email}</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {user.fullname}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {user.email}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -422,12 +565,18 @@ const UserManagement = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {user.profileCompleted ? (
-                        <span className="text-xs text-green-600 font-medium">Complete</span>
+                        <span className="text-xs text-green-600 font-medium">
+                          Complete
+                        </span>
                       ) : (
-                        <span className="text-xs text-amber-600 font-medium">Incomplete</span>
+                        <span className="text-xs text-amber-600 font-medium">
+                          Incomplete
+                        </span>
                       )}
                       {user.isActive === false && (
-                        <span className="ml-2 text-xs text-red-600 font-medium">Deactivated</span>
+                        <span className="ml-2 text-xs text-red-600 font-medium">
+                          Deactivated
+                        </span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -442,18 +591,34 @@ const UserManagement = () => {
       </div>
 
       <div className="mt-4">
-        <Pagination page={pagination.page} pages={pagination.pages} onPageChange={setPage} />
+        <Pagination
+          page={pagination.page}
+          pages={pagination.pages}
+          onPageChange={setPage}
+        />
       </div>
 
-      <Modal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} title="Add User">
+      <Modal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        title="Add User"
+      >
         {renderFormFields()}
       </Modal>
 
-      <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit User">
+      <Modal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        title="Edit User"
+      >
         {renderFormFields()}
       </Modal>
 
-      <Modal isOpen={isViewOpen} onClose={() => setIsViewOpen(false)} title="User Profile">
+      <Modal
+        isOpen={isViewOpen}
+        onClose={() => setIsViewOpen(false)}
+        title="User Profile"
+      >
         {selectedUser && (
           <div className="space-y-3">
             <div className="flex justify-between">
@@ -482,17 +647,25 @@ const UserManagement = () => {
             </div>
             <div className="flex justify-between">
               <span className="font-medium">Status:</span>
-              <span>{selectedUser.isActive === false ? "Deactivated" : "Active"}</span>
+              <span>
+                {selectedUser.isActive === false ? "Deactivated" : "Active"}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="font-medium">Profile:</span>
-              <span>{selectedUser.profileCompleted ? "Complete" : "Incomplete"}</span>
+              <span>
+                {selectedUser.profileCompleted ? "Complete" : "Incomplete"}
+              </span>
             </div>
           </div>
         )}
       </Modal>
 
-      <Modal isOpen={isResetOpen} onClose={() => setIsResetOpen(false)} title="Reset Password">
+      <Modal
+        isOpen={isResetOpen}
+        onClose={() => setIsResetOpen(false)}
+        title="Reset Password"
+      >
         <form onSubmit={handleResetPassword} className="space-y-4">
           <TextInput
             label="New Password"
@@ -504,7 +677,11 @@ const UserManagement = () => {
             required
           />
           <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" onClick={() => setIsResetOpen(false)} className="bg-gray-300 text-gray-700 hover:bg-gray-400">
+            <Button
+              type="button"
+              onClick={() => setIsResetOpen(false)}
+              className="bg-gray-300 text-gray-700 hover:bg-gray-400"
+            >
               Cancel
             </Button>
             <Button type="submit">Reset Password</Button>

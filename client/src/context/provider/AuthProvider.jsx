@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { AuthContext } from "../AuthContext";
 import axiosClient from "../../api/axiosClient";
 import { ROLES } from "../../constants/roles";
@@ -7,7 +7,17 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [user, setUser] = useState(null);
 
-  const register = async (formData) => {
+  const login = useCallback((newToken) => {
+    setToken(newToken);
+    localStorage.setItem("token", newToken);
+  }, []);
+
+  const logout = useCallback(() => {
+    setToken(null);
+    localStorage.removeItem("token");
+  }, []);
+
+  const register = useCallback(async (formData) => {
     console.log(formData);
 
     try {
@@ -26,17 +36,7 @@ export const AuthProvider = ({ children }) => {
         message: err.response?.data?.message || "Registration failed",
       };
     }
-  };
-
-  const login = (newToken) => {
-    setToken(newToken);
-    localStorage.setItem("token", newToken);
-  };
-
-  const logout = () => {
-    setToken(null);
-    localStorage.removeItem("token");
-  };
+  }, [login]);
 
   useEffect(() => {
     if (!token) return;
@@ -54,9 +54,12 @@ export const AuthProvider = ({ children }) => {
     };
 
     getUser();
-  }, [token]);
+  }, [token, logout]);
 
-  const value = { token, register, login, logout, user, axios: axiosClient, ROLES };
+  const value = useMemo(
+    () => ({ token, register, login, logout, user, axios: axiosClient, ROLES }),
+    [token, user, register, login, logout]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
