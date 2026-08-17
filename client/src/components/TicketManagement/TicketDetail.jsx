@@ -5,7 +5,8 @@ import TicketLedger from "./TicketLedger";
 import CommentSection from "./CommentSection";
 import { useTickets } from "../../hooks/useTickets";
 import { useUsers } from "../../hooks/useUsers";
-import { formatStatus, formatPriority, statusColor, priorityColor } from "./TicketCard";
+import { formatStatus, formatPriority, statusColor, priorityColor } from "./utils";
+import { ROLES } from "../../constants/roles";
 
 const Modal = ({ open, onClose, title, children, width = "max-w-md" }) => {
   if (!open) return null;
@@ -27,6 +28,7 @@ const TicketDetail = ({ ticket, user }) => {
   const { getUsers } = useUsers();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const [activeTicket, setActiveTicket] = useState(ticket);
   const [ledger, setLedger] = useState([]);
   const [showLedger, setShowLedger] = useState(false);
@@ -84,7 +86,7 @@ const TicketDetail = ({ ticket, user }) => {
       try {
         const data = await getUsers({ limit: 100 });
         const users = data.users || data;
-        setSupportStaff(users.filter((u) => u.role === "support" || u.role === "admin"));
+        setSupportStaff(users.filter((u) => u.role === ROLES.SUPPORT || u.role === ROLES.ADMIN));
       } catch {
         // ignore
       }
@@ -95,12 +97,13 @@ const TicketDetail = ({ ticket, user }) => {
   const handleClaim = async () => {
     setLoading(true);
     setMessage("");
+    setError("");
     try {
       await claimTicket(ticket._id);
       setMessage("Ticket claimed successfully.");
       await refresh();
     } catch (err) {
-      setMessage(err.response?.data?.message || err.message || "Failed to claim ticket.");
+      setError(err.response?.data?.message || err.message || "Failed to claim ticket.");
     } finally {
       setLoading(false);
     }
@@ -110,13 +113,14 @@ const TicketDetail = ({ ticket, user }) => {
     if (!assignTo) return;
     setLoading(true);
     setMessage("");
+    setError("");
     try {
       await assignTicket(ticket._id, assignTo);
       setMessage("Ticket assigned successfully.");
       setAssignOpen(false);
       await refresh();
     } catch (err) {
-      setMessage(err.response?.data?.message || err.message || "Failed to assign ticket.");
+      setError(err.response?.data?.message || err.message || "Failed to assign ticket.");
     } finally {
       setLoading(false);
     }
@@ -129,13 +133,14 @@ const TicketDetail = ({ ticket, user }) => {
     }
     setLoading(true);
     setMessage("");
+    setError("");
     try {
       await changeTicketStatus(ticket._id, newStatus);
       setMessage("Status updated.");
       setStatusOpen(false);
       await refresh();
     } catch (err) {
-      setMessage(err.response?.data?.message || err.message || "Failed to update status.");
+      setError(err.response?.data?.message || err.message || "Failed to update status.");
     } finally {
       setLoading(false);
     }
@@ -148,13 +153,14 @@ const TicketDetail = ({ ticket, user }) => {
     }
     setLoading(true);
     setMessage("");
+    setError("");
     try {
       await changeTicketPriority(ticket._id, newPriority);
       setMessage("Priority updated.");
       setPriorityOpen(false);
       await refresh();
     } catch (err) {
-      setMessage(err.response?.data?.message || err.message || "Failed to update priority.");
+      setError(err.response?.data?.message || err.message || "Failed to update priority.");
     } finally {
       setLoading(false);
     }
@@ -163,13 +169,14 @@ const TicketDetail = ({ ticket, user }) => {
   const handleResolve = async () => {
     setLoading(true);
     setMessage("");
+    setError("");
     try {
       await resolveTicket(ticket._id, resolution);
       setMessage("Ticket resolved.");
       setResolveOpen(false);
       await refresh();
     } catch (err) {
-      setMessage(err.response?.data?.message || err.message || "Failed to resolve ticket.");
+      setError(err.response?.data?.message || err.message || "Failed to resolve ticket.");
     } finally {
       setLoading(false);
     }
@@ -178,12 +185,13 @@ const TicketDetail = ({ ticket, user }) => {
   const handleReopen = async () => {
     setLoading(true);
     setMessage("");
+    setError("");
     try {
       await reopenTicket(ticket._id);
       setMessage("Ticket reopened.");
       await refresh();
     } catch (err) {
-      setMessage(err.response?.data?.message || err.message || "Failed to reopen ticket.");
+      setError(err.response?.data?.message || err.message || "Failed to reopen ticket.");
     } finally {
       setLoading(false);
     }
@@ -192,12 +200,13 @@ const TicketDetail = ({ ticket, user }) => {
   const handleClose = async () => {
     setLoading(true);
     setMessage("");
+    setError("");
     try {
       await closeTicket(ticket._id);
       setMessage("Ticket closed.");
       await refresh();
     } catch (err) {
-      setMessage(err.response?.data?.message || err.message || "Failed to close ticket.");
+      setError(err.response?.data?.message || err.message || "Failed to close ticket.");
     } finally {
       setLoading(false);
     }
@@ -206,6 +215,7 @@ const TicketDetail = ({ ticket, user }) => {
   const handleEdit = async () => {
     setLoading(true);
     setMessage("");
+    setError("");
     try {
       const updates = {
         title: editForm.title,
@@ -218,7 +228,7 @@ const TicketDetail = ({ ticket, user }) => {
       setEditOpen(false);
       await refresh();
     } catch (err) {
-      setMessage(err.response?.data?.message || err.message || "Failed to update ticket.");
+      setError(err.response?.data?.message || err.message || "Failed to update ticket.");
     } finally {
       setLoading(false);
     }
@@ -226,16 +236,16 @@ const TicketDetail = ({ ticket, user }) => {
 
   const isOwner = user && activeTicket.assignedTo && activeTicket.assignedTo._id === user._id;
   const isCreator = user && activeTicket.createdBy && activeTicket.createdBy._id === user._id;
-  const isAdmin = user?.role === "admin";
-  const isSupport = user?.role === "support";
+  const isAdmin = user?.role === ROLES.ADMIN;
+  const isSupport = user?.role === ROLES.SUPPORT;
 
-  const canClaim = isSupport && !activeTicket.assignedTo && ["open", "in_progress", "pending"].includes(activeTicket.status);
-  const canEdit = isAdmin || isOwner || isCreator;
+  const canClaim = (isAdmin || isSupport) && !activeTicket.assignedTo;
+  const canEdit = isAdmin || (isSupport && isOwner) || isCreator;
   const canAssign = isAdmin;
-  const canChangeStatus = isAdmin || isOwner;
-  const canChangePriority = isAdmin || isOwner;
-  const canResolve = isAdmin || (isOwner && activeTicket.status !== "closed");
-  const canReopen = isAdmin || (isOwner && ["resolved", "closed"].includes(activeTicket.status));
+  const canChangeStatus = isAdmin || (isSupport && isOwner) || isCreator;
+  const canChangePriority = isAdmin || (isSupport && isOwner) || isCreator;
+  const canResolve = isAdmin || (isSupport && isOwner) || isCreator;
+  const canReopen = isAdmin || (isSupport && isOwner) || isCreator;
   const canClose = isAdmin;
 
   const actions = [
@@ -253,10 +263,8 @@ const TicketDetail = ({ ticket, user }) => {
   const statusOptions = [
     { value: "open", label: "Open" },
     { value: "in_progress", label: "In Progress" },
-    { value: "pending", label: "Pending" },
     { value: "resolved", label: "Resolved" },
     { value: "closed", label: "Closed" },
-    { value: "reopened", label: "Reopened" },
   ];
 
   const priorityOptions = [
@@ -288,6 +296,11 @@ const TicketDetail = ({ ticket, user }) => {
       {message && (
         <div className="mx-5 mt-4 bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-2 rounded-md">
           {message}
+        </div>
+      )}
+      {error && (
+        <div className="mx-5 mt-4 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2 rounded-md">
+          {error}
         </div>
       )}
 

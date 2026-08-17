@@ -7,8 +7,10 @@ import {
   FiUser,
   FiUsers,
   FiGrid,
+  FiLayout,
 } from "react-icons/fi";
 import { AuthContext } from "../context/AuthContext";
+import { ROLES } from "../constants/roles";
 
 const Layout = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -25,12 +27,12 @@ const Layout = () => {
     isActive,
     className,
   }) => {
-    const linkStyle = "flex items-center gap-3 hover:text-blue-500 py-1";
+    const linkStyle = "flex items-center gap-3 hover:text-indigo-500 py-1";
 
     return type === "button" ? (
       <button
         onClick={onClick}
-        className="flex items-center gap-3 text-gray-670 hover:text-blue-500 py-1"
+        className="flex items-center gap-3 text-gray-670 hover:text-indigo-500 py-1"
       >
         {icon}
         {!collapsed && <span>{label}</span>}
@@ -40,7 +42,7 @@ const Layout = () => {
         to={link}
         className={
           isActive
-            ? ` text-blue-500  ${linkStyle} ${className}`
+            ? ` text-indigo-500  ${linkStyle} ${className}`
             : ` ${linkStyle} ${className}`
         }
       >
@@ -60,14 +62,13 @@ const Layout = () => {
       >
         {/* Menu Toggle */}
         <button
-          className="p-4 focus:outline-none"
+          className="p-4 border border-transparent focus:outline-none focus:border-blue-300 focus:border"
           onClick={() => setCollapsed(!collapsed)}
         >
           <FiMenu size={20} />
         </button>
 
         {/* Menu Items */}
-
         <nav className="flex flex-col gap-4 p-4">
           <MenuItem
             label="Dasboard"
@@ -76,6 +77,33 @@ const Layout = () => {
             icon={<FiGrid />}
             isActive={location.pathname === "/dashboard"}
           />
+          {user?.role === ROLES.ADMIN && (
+            <MenuItem
+              label="Admin"
+              type="link"
+              link="/admin"
+              icon={<FiLayout />}
+              isActive={location.pathname === "/admin"}
+            />
+          )}
+          {user?.role === ROLES.SUPPORT && (
+            <MenuItem
+              label="Support"
+              type="link"
+              link="/support"
+              icon={<FiUsers />}
+              isActive={location.pathname === "/support"}
+            />
+          )}
+          {user?.role !== ROLES.ADMIN && user?.role !== ROLES.SUPPORT && (
+            <MenuItem
+              label="My Tickets"
+              type="link"
+              link="/"
+              icon={<FiFileText />}
+              isActive={location.pathname === "/"}
+            />
+          )}
           <MenuItem
             label="Tickets Management"
             type="link"
@@ -89,7 +117,7 @@ const Layout = () => {
             link="/usersManagement"
             icon={<FiUsers />}
             isActive={location.pathname === "/userManagement"}
-            className={user?.role === "admin" ? "" : "hidden"}
+            className={user?.role === ROLES.ADMIN || user?.role === ROLES.SUPPORT ? "" : "hidden"}
           />
           <MenuItem
             label="Logout"
@@ -106,7 +134,7 @@ const Layout = () => {
               : `flex flex-col w-full h-1/5 bg-white absolute bottom-0 gap-4 items-center justify-center`
           }
         >
-          <div className="h-[100px] w-[100px] flex items-center justify-center rounded-full bg-white shadow-2xl ">
+          <div className="h-25 w-25 flex items-center justify-center rounded-full bg-white shadow-2xl ">
             <FiUser size={30} color="#636363" />
           </div>
           <div className="text-center">

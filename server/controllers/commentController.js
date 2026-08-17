@@ -1,9 +1,17 @@
 const Comment = require("../models/commentModel");
 const Ticket = require("../models/ticketModel");
+const ROLES = require("../middleware/roleConstants");
 
 exports.getComments = async (req, res, next) => {
   try {
-    const comments = await Comment.find({ ticket: req.params.ticketId })
+    const isAdminOrSupport = req.user.role === ROLES.ADMIN || req.user.role === ROLES.SUPPORT;
+    const filter = { ticket: req.params.ticketId };
+
+    if (!isAdminOrSupport) {
+      filter.isInternal = { $ne: true };
+    }
+
+    const comments = await Comment.find(filter)
       .populate("author", "fullname email role")
       .sort({ createdAt: 1 });
     res.json(comments);
@@ -17,7 +25,7 @@ exports.getComments = async (req, res, next) => {
 
 exports.createComment = async (req, res, next) => {
   try {
-    const { content } = req.body;
+    const { content, isInternal } = req.body;
 
     if (!content || !content.trim()) {
       return res.status(400).json({ message: "Comment content is required" });
@@ -30,6 +38,7 @@ exports.createComment = async (req, res, next) => {
       ticket: req.params.ticketId,
       author: req.user._id,
       content,
+      isInternal: Boolean(isInternal),
     });
 
     const populated = await comment.populate("author", "fullname email role");
@@ -47,10 +56,14 @@ exports.deleteComment = async (req, res, next) => {
     const comment = await Comment.findById(req.params.id);
     if (!comment) return res.status(404).json({ message: "Comment not found" });
 
-    if (
-      req.user.role !== "admin" &&
-      comment.author.toString() !== req.user._id.toString()
-    ) {
+    const isAdminOrSupport = req.user.role === ROLES.ADMIN || req.user.role === ROLES.SUPPORT;
+    const isAuthor = comment.author.toString() === req.user._id.toString();
+
+    if (comment.isInternal && !isAdminOrSupport) {
+      return res.status(403).json({ message: "Forbidden: cannot delete internal comments" });
+    }
+
+    if (!isAuthor && !isAdminOrSupport) {
       return res.status(403).json({ message: "Forbidden: can only delete own comments" });
     }
 

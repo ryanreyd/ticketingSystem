@@ -13,14 +13,30 @@ export const useUsers = () => {
     [token]
   );
 
-  const getUsers = useCallback(async () => {
-    const res = await axios.get("/users", authorizeAccess);
+  const getUsers = useCallback(async (params = {}) => {
+    const res = await axios.get("/users", { ...authorizeAccess, params });
     return res.data;
-  }, [axios, authorizeAccess]); // ✅ stable unless axios or token changes
+  }, [axios, authorizeAccess]);
+
   const getMe = useCallback(async () => {
     const res = await axios.get("/users/me", authorizeAccess);
     return res.data;
-  }, [axios, authorizeAccess]); // ✅ stable unless axios or token changes
+  }, [axios, authorizeAccess]);
 
-  return { getUsers, getMe };
+  const createUser = useCallback(async (userData) => {
+    const res = await axios.post("/users", userData, authorizeAccess);
+    return res.data;
+  }, [axios, authorizeAccess]);
+
+  const updateUser = useCallback(async (userId, updates) => {
+    const res = await axios.put(`/users/${userId}`, updates, authorizeAccess);
+    return res.data;
+  }, [axios, authorizeAccess]);
+
+  const deleteUser = useCallback(async (userId) => {
+    const res = await axios.delete(`/users/${userId}`, authorizeAccess);
+    return res.data;
+  }, [axios, authorizeAccess]);
+
+  return { getUsers, getMe, createUser, updateUser, deleteUser };
 };

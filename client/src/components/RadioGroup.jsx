@@ -18,7 +18,7 @@ const RadioGroup = ({ label, name, value, options, onChange }) => {
               value={option.value}
               checked={value === option.value}
               onChange={onChange}
-              className="accent-blue-500 cursor-pointer"
+              className="accent-indigo-500 cursor-pointer"
             />
             {option.label}
           </label>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { AuthContext } from "../AuthContext";
 import axiosClient from "../../api/axiosClient";
+import { ROLES } from "../../constants/roles";
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token") || null);
@@ -55,7 +56,7 @@ export const AuthProvider = ({ children }) => {
     getUser();
   }, [token]);
 
-  const value = { token, register, login, logout, user, axios: axiosClient };
+  const value = { token, register, login, logout, user, axios: axiosClient, ROLES };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

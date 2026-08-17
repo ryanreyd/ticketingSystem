@@ -171,7 +171,7 @@ const RegisterPage = () => {
               name="departmentId"
               value={formData.departmentId}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-indigo-300 focus:border bg-white"
               required
             >
               <option value="">Select department</option>
@@ -191,7 +191,7 @@ const RegisterPage = () => {
               name="branchId"
               value={formData.branchId}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:border-indigo-300 focus:border bg-white"
               required
             >
               <option value="">Select branch</option>

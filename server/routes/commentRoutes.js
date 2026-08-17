@@ -15,6 +15,6 @@ router.route("/")
   .post(createComment);
 
 router.route("/:id")
-  .delete(role("admin"), deleteComment);
+  .delete(deleteComment);
 
 module.exports = router;

@@ -120,7 +120,7 @@ exports.updateProfile = async (req, res, next) => {
 
 exports.updateUser = async (req, res, next) => {
   try {
-    const { fullname, email, password, role, departmentId, branchId, viberPhone } = req.body;
+    const { fullname, email, password, role, departmentId, branchId, viberPhone, isActive } = req.body;
 
     const targetUser = await User.findById(req.params.id);
     if (!targetUser) return res.status(404).json({ message: "User not found" });
@@ -193,6 +193,13 @@ exports.updateUser = async (req, res, next) => {
       targetUser.role = role;
     }
 
+    if (isActive !== undefined && req.user.role === "admin") {
+      if (targetUser._id.toString() === req.user._id.toString()) {
+        return res.status(400).json({ message: "You cannot deactivate your own account" });
+      }
+      targetUser.isActive = isActive;
+    }
+
     await targetUser.save();
     const populated = await targetUser.populate("department branch");
     res.json(populated.toSafeObject());
@@ -200,6 +207,109 @@ exports.updateUser = async (req, res, next) => {
     if (err.code === 11000) {
       return res.status(400).json({ message: "Email already exists" });
     }
+    if (err.name === "CastError") {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+    next(err);
+  }
+};
+
+exports.createUser = async (req, res, next) => {
+  try {
+    const {
+      fullname,
+      email,
+      password,
+      role = "user",
+      departmentId,
+      branchId,
+      viberPhone,
+    } = req.body;
+
+    if (!fullname || !email || !password) {
+      return res.status(400).json({ message: "Fullname, email, and password are required" });
+    }
+
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
+    let department = null;
+    if (departmentId) {
+      if (!mongoose.isValidObjectId(departmentId)) {
+        return res.status(400).json({ message: "Invalid department ID" });
+      }
+      department = await Department.findOne({ _id: departmentId, isActive: true });
+      if (!department) {
+        return res.status(400).json({ message: "Department not found or inactive" });
+      }
+    }
+
+    let branch = null;
+    if (branchId) {
+      if (!mongoose.isValidObjectId(branchId)) {
+        return res.status(400).json({ message: "Invalid branch ID" });
+      }
+      branch = await Branch.findOne({ _id: branchId, isActive: true });
+      if (!branch) {
+        return res.status(400).json({ message: "Branch not found or inactive" });
+      }
+    }
+
+    let normalizedPhone = null;
+    if (viberPhone) {
+      try {
+        const phone = parsePhoneNumber(viberPhone, "PH");
+        if (!phone || !phone.isValid()) {
+          return res.status(400).json({ message: "Invalid Viber phone number" });
+        }
+        normalizedPhone = phone.number;
+      } catch {
+        return res.status(400).json({ message: "Invalid Viber phone number format" });
+      }
+    }
+
+    const hashed = await bcrypt.hash(password, 12);
+    const user = await User.create({
+      fullname,
+      email,
+      password: hashed,
+      role,
+      department: department?._id,
+      branch: branch?._id,
+      viberPhone: normalizedPhone,
+    });
+
+    const populated = await user.populate("department branch");
+    res.status(201).json(populated.toSafeObject());
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+    next(err);
+  }
+};
+
+exports.deleteUser = async (req, res, next) => {
+  try {
+    const targetUser = await User.findById(req.params.id);
+    if (!targetUser) return res.status(404).json({ message: "User not found" });
+
+    if (targetUser._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({ message: "You cannot delete your own account" });
+    }
+
+    if (targetUser.role === "admin") {
+      const adminCount = await User.countDocuments({ role: "admin" });
+      if (adminCount <= 1) {
+        return res.status(400).json({ message: "Cannot delete the last admin user" });
+      }
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: "User deleted" });
+  } catch (err) {
     if (err.name === "CastError") {
       return res.status(400).json({ message: "Invalid user ID" });
     }

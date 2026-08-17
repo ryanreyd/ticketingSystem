@@ -1,13 +1,40 @@
 const Ticket = require("../models/ticketModel");
+const {
+  createTicket,
+  getTicketWithAccess,
+  claimTicket,
+  assignTicket,
+  changeTicketStatus,
+  changeTicketPriority,
+  resolveTicket,
+  reopenTicket,
+  closeTicket,
+  editTicket,
+  getTicketLedger,
+} = require("../services/ticketService");
 
 exports.getTickets = async (req, res, next) => {
   try {
-    const { status, priority, category, page = 1, limit = 20 } = req.query;
+    const { status, priority, category, page = 1, limit = 20, assignedTo } = req.query;
     const filter = {};
 
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
     if (category) filter.category = category;
+
+    const user = req.user;
+
+    if (user.role !== "admin") {
+      if (user.role === "support") {
+        filter.$or = [{ createdBy: user._id }, { assignedTo: user._id }];
+      } else {
+        filter.createdBy = user._id;
+      }
+    }
+
+    if (assignedTo && user.role === "admin") {
+      filter.assignedTo = assignedTo;
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
@@ -37,11 +64,7 @@ exports.getTickets = async (req, res, next) => {
 
 exports.getTicketById = async (req, res, next) => {
   try {
-    const ticket = await Ticket.findById(req.params.id)
-      .populate("createdBy", "fullname email")
-      .populate("assignedTo", "fullname email");
-
-    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+    const ticket = await getTicketWithAccess(req.params.id, req.user);
     res.json(ticket);
   } catch (err) {
     if (err.name === "CastError") {
@@ -59,15 +82,12 @@ exports.createTicket = async (req, res, next) => {
       return res.status(400).json({ message: "Title is required" });
     }
 
-    const newTicket = await Ticket.create({
-      title,
-      description,
-      priority,
-      category,
-      createdBy: req.user._id,
-    });
+    const ticket = await createTicket(
+      { title, description, priority, category },
+      req.user._id
+    );
 
-    const populated = await newTicket.populate("createdBy", "fullname email");
+    const populated = await ticket.populate("createdBy", "fullname email");
     res.status(201).json(populated);
   } catch (err) {
     if (err.name === "ValidationError") {
@@ -79,31 +99,10 @@ exports.createTicket = async (req, res, next) => {
 
 exports.updateTicket = async (req, res, next) => {
   try {
-    const { title, description, status, priority, category, assignedTo } = req.body;
-
-    const ticket = await Ticket.findById(req.params.id);
-    if (!ticket) return res.status(404).json({ message: "Ticket not found" });
-
-    if (req.user.role === "user" && ticket.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Forbidden: you can only update your own tickets" });
-    }
-
-    const updates = {};
-    if (title !== undefined) updates.title = title;
-    if (description !== undefined) updates.description = description;
-    if (status !== undefined) updates.status = status;
-    if (priority !== undefined) updates.priority = priority;
-    if (category !== undefined) updates.category = category;
-    if (assignedTo !== undefined) updates.assignedTo = assignedTo;
-
-    const updated = await Ticket.findByIdAndUpdate(req.params.id, updates, {
-      new: true,
-      runValidators: true,
-    })
-      .populate("createdBy", "fullname email")
-      .populate("assignedTo", "fullname email");
-
-    res.json(updated);
+    const updates = req.body;
+    const ticket = await editTicket(req.params.id, req.user._id, updates);
+    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    res.json(populated);
   } catch (err) {
     if (err.name === "CastError") {
       return res.status(400).json({ message: "Invalid ticket ID" });
@@ -120,12 +119,130 @@ exports.deleteTicket = async (req, res, next) => {
     const ticket = await Ticket.findById(req.params.id);
     if (!ticket) return res.status(404).json({ message: "Ticket not found" });
 
-    if (req.user.role !== "admin" && ticket.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Forbidden: you can only delete your own tickets" });
-    }
-
     await Ticket.findByIdAndDelete(req.params.id);
     res.json({ message: "Ticket deleted" });
+  } catch (err) {
+    if (err.name === "CastError") {
+      return res.status(400).json({ message: "Invalid ticket ID" });
+    }
+    next(err);
+  }
+};
+
+exports.claimTicket = async (req, res, next) => {
+  try {
+    const ticket = await claimTicket(req.params.id, req.user);
+    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    res.json(populated);
+  } catch (err) {
+    if (err.name === "CastError") {
+      return res.status(400).json({ message: "Invalid ticket ID" });
+    }
+    next(err);
+  }
+};
+
+exports.assignTicket = async (req, res, next) => {
+  try {
+    const { assignedTo } = req.body;
+
+    if (!assignedTo) {
+      return res.status(400).json({ message: "assignedTo is required" });
+    }
+
+    const ticket = await assignTicket(req.params.id, req.user._id, assignedTo);
+    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    res.json(populated);
+  } catch (err) {
+    if (err.name === "CastError") {
+      return res.status(400).json({ message: "Invalid ticket ID" });
+    }
+    next(err);
+  }
+};
+
+exports.changeTicketStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ message: "Status is required" });
+    }
+
+    const ticket = await changeTicketStatus(req.params.id, req.user._id, status);
+    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    res.json(populated);
+  } catch (err) {
+    if (err.name === "CastError") {
+      return res.status(400).json({ message: "Invalid ticket ID" });
+    }
+    next(err);
+  }
+};
+
+exports.changeTicketPriority = async (req, res, next) => {
+  try {
+    const { priority } = req.body;
+
+    if (!priority) {
+      return res.status(400).json({ message: "Priority is required" });
+    }
+
+    const ticket = await changeTicketPriority(req.params.id, req.user._id, priority);
+    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    res.json(populated);
+  } catch (err) {
+    if (err.name === "CastError") {
+      return res.status(400).json({ message: "Invalid ticket ID" });
+    }
+    next(err);
+  }
+};
+
+exports.resolveTicket = async (req, res, next) => {
+  try {
+    const { resolution } = req.body;
+    const ticket = await resolveTicket(req.params.id, req.user._id, resolution);
+    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    res.json(populated);
+  } catch (err) {
+    if (err.name === "CastError") {
+      return res.status(400).json({ message: "Invalid ticket ID" });
+    }
+    next(err);
+  }
+};
+
+exports.reopenTicket = async (req, res, next) => {
+  try {
+    const ticket = await reopenTicket(req.params.id, req.user._id);
+    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    res.json(populated);
+  } catch (err) {
+    if (err.name === "CastError") {
+      return res.status(400).json({ message: "Invalid ticket ID" });
+    }
+    next(err);
+  }
+};
+
+exports.closeTicket = async (req, res, next) => {
+  try {
+    const ticket = await closeTicket(req.params.id, req.user._id);
+    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    res.json(populated);
+  } catch (err) {
+    if (err.name === "CastError") {
+      return res.status(400).json({ message: "Invalid ticket ID" });
+    }
+    next(err);
+  }
+};
+
+exports.getTicketLedger = async (req, res, next) => {
+  try {
+    const ledger = await getTicketLedger(req.params.id, req.user);
+    res.json(ledger);
   } catch (err) {
     if (err.name === "CastError") {
       return res.status(400).json({ message: "Invalid ticket ID" });

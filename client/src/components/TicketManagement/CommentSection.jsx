@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useComments } from "../../hooks/useComments";
+import { ROLES } from "../../constants/roles";
 
 const CommentSection = ({ ticketId, user }) => {
   const { getComments, createComment, deleteComment } = useComments();
@@ -10,7 +11,7 @@ const CommentSection = ({ ticketId, user }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const canAddInternal = user?.role === "admin" || user?.role === "support";
+  const canAddInternal = user?.role === ROLES.ADMIN || user?.role === ROLES.SUPPORT;
 
   useEffect(() => {
     const fetchComments = async () => {
@@ -74,7 +75,7 @@ const CommentSection = ({ ticketId, user }) => {
                   <span className="text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-medium">Internal</span>
                 )}
               </div>
-              {(user?.role === "admin" || comment.author?._id === user?._id) && (
+              {(user?.role === ROLES.ADMIN || user?.role === ROLES.SUPPORT || comment.author?._id === user?._id) && (
                 <button
                   onClick={() => handleDelete(comment._id)}
                   className="text-xs text-gray-400 hover:text-red-600 transition"

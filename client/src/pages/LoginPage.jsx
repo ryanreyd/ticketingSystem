@@ -89,7 +89,7 @@ const LoginPage = () => {
           <span className="flex-1 py-1 text-center text-neutral-500">or</span>
           <Link
             to="/register"
-            className="flex-1 text-center text-neutral-500 hover:text-blue-500"
+            className="flex-1 text-center text-neutral-500 hover:text-indigo-500"
           >
             Create new account
           </Link>

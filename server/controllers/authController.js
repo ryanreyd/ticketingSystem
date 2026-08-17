@@ -110,6 +110,86 @@ exports.register = async (req, res, next) => {
   }
 };
 
+exports.getSetupStatus = async (req, res, next) => {
+  try {
+    const adminExists = await User.findOne({ role: "admin" });
+    res.json({ setupComplete: !!adminExists });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.setup = async (req, res, next) => {
+  const { fullname, email, password, confirmPassword } = req.body;
+
+  if (!fullname || !email || !password) {
+    return res.status(400).json({ message: "Fullname, email, and password are required" });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({ message: "Passwords do not match" });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ message: "Password must be at least 6 characters" });
+  }
+
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+    return res.status(400).json({ message: "Password must contain a letter and a number" });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: "Invalid email format" });
+  }
+
+  try {
+    const existingAdmin = await User.findOne({ role: "admin" });
+    if (existingAdmin) {
+      return res.status(403).json({ message: "Setup already completed" });
+    }
+
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
+    const hashed = await bcrypt.hash(password, 12);
+    const user = await User.create({
+      fullname,
+      email,
+      password: hashed,
+      role: "admin",
+      department: null,
+      branch: null,
+      viberPhone: "",
+    });
+
+    // Override profileCompleted since pre-save hook sets it to false
+    // due to missing department/branch/viberPhone
+    await User.findByIdAndUpdate(user._id, { profileCompleted: true });
+
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    const populated = await user.populate("department branch");
+
+    res.status(201).json({
+      message: "Super admin created successfully",
+      token,
+      user: populated.toSafeObject(),
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+    next(err);
+  }
+};
+
 exports.login = async (req, res, next) => {
   const { email, password } = req.body;
 
