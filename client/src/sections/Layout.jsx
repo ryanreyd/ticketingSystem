@@ -32,7 +32,7 @@ const Layout = () => {
     return type === "button" ? (
       <button
         onClick={onClick}
-        className="flex items-center gap-3 text-gray-670 hover:text-indigo-500 py-1"
+        className="flex items-center gap-3 text-gray-600 hover:text-indigo-500 py-1"
       >
         {icon}
         {!collapsed && <span>{label}</span>}
@@ -71,39 +71,12 @@ const Layout = () => {
         {/* Menu Items */}
         <nav className="flex flex-col gap-4 p-4">
           <MenuItem
-            label="Dasboard"
+            label="Dashboard"
             type="link"
             link="/dashboard"
             icon={<FiGrid />}
             isActive={location.pathname === "/dashboard"}
           />
-          {user?.role === ROLES.ADMIN && (
-            <MenuItem
-              label="Admin"
-              type="link"
-              link="/admin"
-              icon={<FiLayout />}
-              isActive={location.pathname === "/admin"}
-            />
-          )}
-          {user?.role === ROLES.SUPPORT && (
-            <MenuItem
-              label="Support"
-              type="link"
-              link="/support"
-              icon={<FiUsers />}
-              isActive={location.pathname === "/support"}
-            />
-          )}
-          {user?.role !== ROLES.ADMIN && user?.role !== ROLES.SUPPORT && (
-            <MenuItem
-              label="My Tickets"
-              type="link"
-              link="/"
-              icon={<FiFileText />}
-              isActive={location.pathname === "/"}
-            />
-          )}
           <MenuItem
             label="Tickets Management"
             type="link"
@@ -116,7 +89,7 @@ const Layout = () => {
             type="link"
             link="/usersManagement"
             icon={<FiUsers />}
-            isActive={location.pathname === "/userManagement"}
+            isActive={location.pathname === "/usersManagement"}
             className={user?.role === ROLES.ADMIN || user?.role === ROLES.SUPPORT ? "" : "hidden"}
           />
           <MenuItem
@@ -134,7 +107,7 @@ const Layout = () => {
               : `flex flex-col w-full h-1/5 bg-white absolute bottom-0 gap-4 items-center justify-center`
           }
         >
-          <div className="h-25 w-25 flex items-center justify-center rounded-full bg-white shadow-2xl ">
+          <div className="h-24 w-24 flex items-center justify-center rounded-full bg-white shadow-2xl ">
             <FiUser size={30} color="#636363" />
           </div>
           <div className="text-center">

@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 
 const commentSchema = new mongoose.Schema(
   {
-    ticket: {
-      type: mongoose.Schema.Types.ObjectId,
+    ticketId: {
+      type: String,
       ref: "Ticket",
       required: true,
       index: true,

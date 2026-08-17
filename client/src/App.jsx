@@ -1,12 +1,9 @@
 import React, { useContext, useEffect, useState } from "react";
-import LoginPage from "./pages/loginPage";
+import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import Dashboard from "./pages/Dashboard";
 import TicketManagement from "./pages/TicketManagement";
 import UserManagement from "./pages/admin/UserManagement";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import SupportDashboard from "./pages/SupportDashboard";
-import SubmitterDashboard from "./pages/SubmitterDashboard";
 import Layout from "./sections/Layout";
 import SetupPage from "./pages/SetupPage";
 import axiosClient from "./api/axiosClient";
@@ -24,8 +21,9 @@ import { FiLoader } from "react-icons/fi";
 
 const App = () => {
   const { getMe } = useUsers();
-  const { token } = useContext(AuthContext);
-  const [me, setMe] = useState([]);
+  const { token, logout } = useContext(AuthContext);
+  const [me, setMe] = useState(null);
+  const [meLoading, setMeLoading] = useState(true);
   const [setupComplete, setSetupComplete] = useState(null);
 
   useEffect(() => {
@@ -34,16 +32,22 @@ const App = () => {
         const data = await getMe();
         setMe(data);
       } catch (err) {
-        if (err.response?.status !== 401) {
+        if (err.response?.status === 401) {
+          logout();
+        } else {
           console.error("Failed to load current user", err);
         }
+      } finally {
+        setMeLoading(false);
       }
     };
 
     if (token) {
       fetchUsers();
+    } else {
+      setMeLoading(false);
     }
-  }, [getMe, token]);
+  }, [getMe, token, logout]);
 
   useEffect(() => {
     const checkSetup = async () => {
@@ -94,61 +98,35 @@ const App = () => {
           element={!token ? <RegisterPage /> : <Navigate to="/dashboard" />}
         />
 
-        <Route element={token ? <Layout /> : <Navigate to="/login" />}>
-          <Route path="status_401" element={<Status_401 />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/ticketsManagement" element={<TicketManagement />} />
+         <Route element={token ? <Layout /> : <Navigate to="/login" />}>
+          {!meLoading && me && (
+            <>
+              <Route path="status_401" element={<Status_401 />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/ticketsManagement" element={<TicketManagement />} />
 
-          <Route
-            path="/admin"
-            element={
-              me.role === ROLES.ADMIN ? (
-                <AdminDashboard />
-              ) : (
-                <Navigate to="/dashboard" />
-              )
-            }
-          />
+              <Route
+                path="/"
+                element={<Navigate to="/ticketsManagement" />}
+              />
 
-          <Route
-            path="/support"
-            element={
-              me.role === ROLES.SUPPORT ? (
-                <SupportDashboard />
-              ) : (
-                <Navigate to="/dashboard" />
-              )
-            }
-          />
-
-          <Route
-            path="/"
-            element={
-              me.role !== ROLES.ADMIN && me.role !== ROLES.SUPPORT
-                ? <SubmitterDashboard />
-                : me.role === ROLES.ADMIN ? (
-                    <Navigate to="/admin" />
+              <Route
+                path="/usersManagement"
+                element={
+                  me.role === ROLES.ADMIN || me.role === ROLES.SUPPORT ? (
+                    <UserManagement />
                   ) : (
-                    <Navigate to="/support" />
+                    <Navigate to="/ticketsManagement" />
                   )
-            }
-          />
-
-          <Route
-            path="/usersManagement"
-            element={
-              me.role === ROLES.ADMIN || me.role === ROLES.SUPPORT ? (
-                <UserManagement />
-              ) : (
-                <Navigate to="/dashboard" />
-              )
-            }
-          />
+                }
+              />
+            </>
+          )}
         </Route>
 
         <Route
           path="*"
-          element={<Navigate to={token ? "/dashboard" : "/login"} />}
+          element={<Navigate to={token ? "/ticketsManagement" : "/login"} />}
         />
       </Routes>
     </Router>

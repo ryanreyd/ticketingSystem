@@ -15,7 +15,7 @@ router.use(auth);
 
 router.route("/me").get(getMe);
 router.route("/me/profile").put(updateProfile);
-router.route("/").get(role("admin"), getUsers).post(role("admin"), createUser);
+router.route("/").get(role(["admin", "support"]), getUsers).post(role("admin"), createUser);
 router.route("/:id").put(role(["admin", "support"]), updateUser).delete(role("admin"), deleteUser);
 
 module.exports = router;

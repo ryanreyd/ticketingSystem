@@ -305,7 +305,7 @@ const UserManagement = () => {
     </form>
   );
 
-  const ActionMenu = ({ user }) => (
+  const ActionMenu = ({ targetUser }) => (
     <DropdownMenu
       align="right"
       trigger={
@@ -316,27 +316,27 @@ const UserManagement = () => {
         </button>
       }
     >
-      <button onClick={() => openView(user)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+      <button onClick={() => openView(targetUser)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
         <FiEye size={16} className="text-gray-400" />
         <span>View Profile</span>
       </button>
-      <button onClick={() => openEdit(user)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+      <button onClick={() => openEdit(targetUser)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
         <FiEdit2 size={16} className="text-gray-400" />
         <span>Edit User</span>
       </button>
-      <button onClick={() => openReset(user)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+      <button onClick={() => openReset(targetUser)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
         <FiKey size={16} className="text-gray-400" />
         <span>Reset Password</span>
       </button>
       {user?.role === ROLES.ADMIN && (
-        <button onClick={() => user.isActive === false ? handleActivate(user) : handleDeactivate(user)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-          <FiPower size={16} className={user.isActive === false ? "text-green-500" : "text-amber-500"} />
-          <span>{user.isActive === false ? "Activate User" : "Deactivate User"}</span>
+        <button onClick={() => targetUser.isActive === false ? handleActivate(targetUser) : handleDeactivate(targetUser)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+          <FiPower size={16} className={targetUser.isActive === false ? "text-green-500" : "text-amber-500"} />
+          <span>{targetUser.isActive === false ? "Activate User" : "Deactivate User"}</span>
         </button>
       )}
       <div className="border-t border-gray-100 my-1 mx-2" />
       {user?.role === ROLES.ADMIN && (
-        <button onClick={() => openDelete(user)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+        <button onClick={() => openDelete(targetUser)} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
           <FiTrash2 size={16} className="text-red-400" />
           <span>Delete User</span>
         </button>
@@ -431,7 +431,7 @@ const UserManagement = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <ActionMenu user={user} />
+                      <ActionMenu targetUser={user} />
                     </td>
                   </tr>
                 ))

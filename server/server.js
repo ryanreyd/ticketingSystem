@@ -1,6 +1,8 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
+if (!process.env.NODE_ENV) process.env.NODE_ENV = 'development';
+
 const connectDB = require('./config/db');
 const app = require('./app');
 

@@ -54,6 +54,15 @@ const ticketAuthz = (action) => {
       const allowed = can(req.user, ticket, action);
 
       if (!allowed) {
+        if (
+          action === "claim" &&
+          (req.user.role === ROLES.ADMIN || req.user.role === ROLES.SUPPORT) &&
+          ticket.assignedTo
+        ) {
+          return res.status(409).json({
+            message: "This ticket has already been claimed",
+          });
+        }
         return res.status(403).json({
           message: "Forbidden: insufficient rights for this action",
         });

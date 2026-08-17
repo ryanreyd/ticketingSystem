@@ -5,7 +5,7 @@ const ROLES = require("../middleware/roleConstants");
 exports.getComments = async (req, res, next) => {
   try {
     const isAdminOrSupport = req.user.role === ROLES.ADMIN || req.user.role === ROLES.SUPPORT;
-    const filter = { ticket: req.params.ticketId };
+    const filter = { ticketId: req.params.ticketId };
 
     if (!isAdminOrSupport) {
       filter.isInternal = { $ne: true };
@@ -35,7 +35,7 @@ exports.createComment = async (req, res, next) => {
     if (!ticket) return res.status(404).json({ message: "Ticket not found" });
 
     const comment = await Comment.create({
-      ticket: req.params.ticketId,
+      ticketId: req.params.ticketId,
       author: req.user._id,
       content,
       isInternal: Boolean(isInternal),

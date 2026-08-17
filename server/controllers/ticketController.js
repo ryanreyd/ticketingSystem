@@ -24,12 +24,8 @@ exports.getTickets = async (req, res, next) => {
 
     const user = req.user;
 
-    if (user.role !== "admin") {
-      if (user.role === "support") {
-        filter.$or = [{ createdBy: user._id }, { assignedTo: user._id }];
-      } else {
-        filter.createdBy = user._id;
-      }
+    if (user.role === "user") {
+      filter.createdBy = user._id;
     }
 
     if (assignedTo && user.role === "admin") {
@@ -101,7 +97,10 @@ exports.updateTicket = async (req, res, next) => {
   try {
     const updates = req.body;
     const ticket = await editTicket(req.params.id, req.user._id, updates);
-    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    const populated = await ticket.populate([
+      { path: "createdBy", select: "fullname email" },
+      { path: "assignedTo", select: "fullname email" },
+    ]);
     res.json(populated);
   } catch (err) {
     if (err.name === "CastError") {
@@ -132,7 +131,7 @@ exports.deleteTicket = async (req, res, next) => {
 exports.claimTicket = async (req, res, next) => {
   try {
     const ticket = await claimTicket(req.params.id, req.user);
-    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    const populated = await ticket.populate("createdBy", "fullname email");
     res.json(populated);
   } catch (err) {
     if (err.name === "CastError") {
@@ -151,7 +150,7 @@ exports.assignTicket = async (req, res, next) => {
     }
 
     const ticket = await assignTicket(req.params.id, req.user._id, assignedTo);
-    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    const populated = await ticket.populate("createdBy", "fullname email");
     res.json(populated);
   } catch (err) {
     if (err.name === "CastError") {
@@ -170,7 +169,10 @@ exports.changeTicketStatus = async (req, res, next) => {
     }
 
     const ticket = await changeTicketStatus(req.params.id, req.user._id, status);
-    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    const populated = await ticket.populate([
+      { path: "createdBy", select: "fullname email" },
+      { path: "assignedTo", select: "fullname email" },
+    ]);
     res.json(populated);
   } catch (err) {
     if (err.name === "CastError") {
@@ -189,7 +191,10 @@ exports.changeTicketPriority = async (req, res, next) => {
     }
 
     const ticket = await changeTicketPriority(req.params.id, req.user._id, priority);
-    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    const populated = await ticket.populate([
+      { path: "createdBy", select: "fullname email" },
+      { path: "assignedTo", select: "fullname email" },
+    ]);
     res.json(populated);
   } catch (err) {
     if (err.name === "CastError") {
@@ -203,7 +208,10 @@ exports.resolveTicket = async (req, res, next) => {
   try {
     const { resolution } = req.body;
     const ticket = await resolveTicket(req.params.id, req.user._id, resolution);
-    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    const populated = await ticket.populate([
+      { path: "createdBy", select: "fullname email" },
+      { path: "assignedTo", select: "fullname email" },
+    ]);
     res.json(populated);
   } catch (err) {
     if (err.name === "CastError") {
@@ -216,7 +224,10 @@ exports.resolveTicket = async (req, res, next) => {
 exports.reopenTicket = async (req, res, next) => {
   try {
     const ticket = await reopenTicket(req.params.id, req.user._id);
-    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    const populated = await ticket.populate([
+      { path: "createdBy", select: "fullname email" },
+      { path: "assignedTo", select: "fullname email" },
+    ]);
     res.json(populated);
   } catch (err) {
     if (err.name === "CastError") {
@@ -229,7 +240,10 @@ exports.reopenTicket = async (req, res, next) => {
 exports.closeTicket = async (req, res, next) => {
   try {
     const ticket = await closeTicket(req.params.id, req.user._id);
-    const populated = await ticket.populate("createdBy", "fullname email").populate("assignedTo", "fullname email");
+    const populated = await ticket.populate([
+      { path: "createdBy", select: "fullname email" },
+      { path: "assignedTo", select: "fullname email" },
+    ]);
     res.json(populated);
   } catch (err) {
     if (err.name === "CastError") {

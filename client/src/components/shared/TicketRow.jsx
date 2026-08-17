@@ -55,10 +55,24 @@ const TicketRow = ({
   onAssign,
   onPriority,
   onStatus,
-  onCloseReopen,
   showAssignDropdown = false,
+  agents = [],
 }) => {
   const isDense = density === "dense" || density === "compact";
+
+  const statusOptions = [
+    { value: "open", label: "Open" },
+    { value: "in_progress", label: "In Progress" },
+    { value: "resolved", label: "Resolved" },
+    { value: "closed", label: "Closed" },
+  ];
+
+  const priorityOptions = [
+    { value: "low", label: "Low" },
+    { value: "medium", label: "Normal" },
+    { value: "high", label: "High" },
+    { value: "urgent", label: "Urgent" },
+  ];
 
   return (
     <tr
@@ -73,7 +87,7 @@ const TicketRow = ({
         <StatusBadge status={ticket.status} />
       </td>
       <td className="align-middle">
-        <strong className="truncate line-clamp-1 line-clamp-width={300}">
+        <strong className="truncate">
           {ticket.title}
         </strong>
       </td>
@@ -83,11 +97,17 @@ const TicketRow = ({
       <td className="align-middle">
         {showAssignDropdown ? (
           <select
+            value={ticket.assignedTo?._id || ""}
+            onChange={(e) => onAssign(ticket._id, e.target.value)}
             className="ml-1 bg-white border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             style={{ padding: "4px 8px" }}
           >
             <option value="">Unassigned</option>
-            {"Support Agents Placeholder"}
+            {agents.map((agent) => (
+              <option key={agent._id} value={agent._id}>
+                {agent.fullname}
+              </option>
+            ))}
           </select>
         ) : (
           <Avatar
@@ -100,47 +120,35 @@ const TicketRow = ({
         )}
       </td>
       <td className="align-middle">
-        {onPriority && (
-          <button
-            onClick={() => onPriority(ticket._id, ticket.priority)}
-            title="Change priority"
-            className="p-1 rounded bg-gray-100 hover:bg-gray-200 transition"
-          >
-            ↕
-          </button>
-        )}
-        {onStatus && (
-          <button
-            onClick={() => onStatus(ticket._id, ticket.status)}
-            title="Change status"
-            className="p-1 rounded bg-gray-100 hover:bg-gray-200 transition"
-          >
-            ↕
-          </button>
-        )}
-        {onCloseReopen && (
-          <button
-            onClick={() => onCloseReopen(ticket._id, ticket.status)}
-            title="Close/Reopen"
-            className="p-1 rounded bg-gray-100 hover:bg-gray-200 transition"
-          >
-            ⇲
-          </button>
-        )}
-        {showAssignDropdown && (
-          <button
-            onClick={() => onAssign(ticket._id)}
-            title="Assign"
-            className="p-1 rounded bg-gray-100 hover:bg-gray-200 transition ml-1"
-          >
-            ↳
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-1">
+          {onStatus && (
+            <select
+              value={ticket.status}
+              onChange={(e) => onStatus(ticket._id, e.target.value)}
+              className="border border-gray-300 rounded px-1 py-0.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              {statusOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          )}
+          {onPriority && (
+            <select
+              value={ticket.priority}
+              onChange={(e) => onPriority(ticket._id, e.target.value)}
+              className="border border-gray-300 rounded px-1 py-0.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            >
+              {priorityOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          )}
+        </div>
       </td>
       <td>
         {onView && (
           <button
-            onClick={() => onView(ticket._id)}
+            onClick={() => onView(ticket)}
             className="text-xs text-indigo-600 underline hover:text-indigo-800"
           >
             View

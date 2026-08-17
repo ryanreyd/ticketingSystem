@@ -53,9 +53,7 @@ const getTicketWithAccess = async (ticketId, user) => {
 
   if (ticket.createdBy._id.toString() === user._id.toString()) return ticket;
 
-  if (user.role === "support" && ticket.assignedTo?._id.toString() === user._id.toString()) {
-    return ticket;
-  }
+  if (user.role === "support") return ticket;
 
   const err = new Error("Forbidden: insufficient rights");
   err.status = 403;
@@ -587,7 +585,7 @@ const getTicketLedger = async (ticketId, user) => {
     return TicketLedger.find({ ticketId }).sort({ createdAt: -1 }).populate("actorId", "fullname email role");
   }
 
-  if (user.role === "support" && ticket.assignedTo?._id.toString() === user._id.toString()) {
+  if (user.role === "support") {
     return TicketLedger.find({ ticketId }).sort({ createdAt: -1 }).populate("actorId", "fullname email role");
   }
 
