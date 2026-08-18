@@ -188,6 +188,7 @@ const TicketManagement = () => {
               <TicketDetail
                 ticket={selectedTicket}
                 user={user}
+                onClose={() => setSelectedTicket(null)}
               />
               <div className="flex justify-end mt-3">
                 <button

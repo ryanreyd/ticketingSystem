@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { FiX } from "react-icons/fi";
 import ActionMenu from "./ActionMenu";
 import Badge from "./Badge";
 import TicketLedger from "./TicketLedger";
@@ -23,7 +24,7 @@ const Modal = ({ open, onClose, title, children, width = "max-w-md" }) => {
   );
 };
 
-const TicketDetail = ({ ticket, user }) => {
+const TicketDetail = ({ ticket, user, onClose }) => {
   const { claimTicket, assignTicket, changeTicketStatus, changeTicketPriority, resolveTicket, reopenTicket, closeTicket, getTicketById, getTicketLedger, updateTicket } = useTickets();
   const { getUsers } = useUsers();
   const [loading, setLoading] = useState(false);
@@ -290,7 +291,16 @@ const TicketDetail = ({ ticket, user }) => {
             </p>
           )}
         </div>
-        <ActionMenu actions={actions} />
+        <div className="flex items-center gap-1">
+          <ActionMenu actions={actions} />
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+            aria-label="Close"
+          >
+            <FiX size={20} />
+          </button>
+        </div>
       </div>
 
       {message && (
