@@ -6,9 +6,9 @@ const can = (user, ticket, action) => {
 
   const isAdmin = user.role === ROLES.ADMIN;
   const isSupport = user.role === ROLES.SUPPORT;
-  const isOwner = ticket.createdBy.toString() === user._id.toString();
+  const isOwner = (ticket.createdBy._id || ticket.createdBy).toString() === user._id.toString();
   const isAssigned = ticket.assignedTo &&
-    ticket.assignedTo.toString() === user._id.toString();
+    (ticket.assignedTo._id || ticket.assignedTo).toString() === user._id.toString();
 
   switch (action) {
     case "edit":

@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const { can } = require("../middleware/ticketAuthz");
 const ROLES = require("../middleware/roleConstants");
 
@@ -186,6 +187,70 @@ describe("can", () => {
 
     test("returns false if action is missing", () => {
       expect(can(admin, unassignedTicket, null)).toBe(false);
+    });
+  });
+
+  describe("with populated Mongoose documents", () => {
+    const oid = () => new mongoose.Types.ObjectId();
+    const supportId = oid();
+    const ownerId = oid();
+    const adminId = oid();
+
+    const support = makeUser({ _id: supportId, role: ROLES.SUPPORT });
+    const owner = makeUser({ _id: ownerId, role: ROLES.USER });
+    const admin = makeUser({ _id: adminId, role: ROLES.ADMIN });
+    const otherUser = makeUser({ _id: oid(), role: ROLES.USER });
+
+    const populatedAssignedTicket = {
+      _id: oid(),
+      createdBy: { _id: ownerId, role: ROLES.USER, fullname: "Owner" },
+      assignedTo: { _id: supportId, role: ROLES.SUPPORT, fullname: "Support" },
+    };
+    const populatedUnassignedTicket = {
+      _id: oid(),
+      createdBy: { _id: ownerId, role: ROLES.USER, fullname: "Owner" },
+      assignedTo: null,
+    };
+
+    test("support can change status on ticket assigned to them (populated)", () => {
+      expect(can(support, populatedAssignedTicket, "change_status")).toBe(true);
+    });
+
+    test("support cannot change status on unassigned ticket (populated)", () => {
+      expect(can(support, populatedUnassignedTicket, "change_status")).toBe(false);
+    });
+
+    test("owner can change status on own ticket (populated)", () => {
+      expect(can(owner, populatedAssignedTicket, "change_status")).toBe(true);
+    });
+
+    test("non-owner user cannot change status (populated)", () => {
+      expect(can(otherUser, populatedAssignedTicket, "change_status")).toBe(false);
+    });
+
+    test("admin can change status on any ticket (populated)", () => {
+      expect(can(admin, populatedAssignedTicket, "change_status")).toBe(true);
+      expect(can(admin, populatedUnassignedTicket, "change_status")).toBe(true);
+    });
+
+    test("support can resolve ticket assigned to them (populated)", () => {
+      expect(can(support, populatedAssignedTicket, "resolve")).toBe(true);
+    });
+
+    test("owner can resolve their own ticket (populated)", () => {
+      expect(can(owner, populatedAssignedTicket, "resolve")).toBe(true);
+    });
+
+    test("non-owner user cannot resolve (populated)", () => {
+      expect(can(otherUser, populatedAssignedTicket, "resolve")).toBe(false);
+    });
+
+    test("support can edit ticket assigned to them (populated)", () => {
+      expect(can(support, populatedAssignedTicket, "edit")).toBe(true);
+    });
+
+    test("owner can edit their own ticket (populated)", () => {
+      expect(can(owner, populatedAssignedTicket, "edit")).toBe(true);
     });
   });
 });
