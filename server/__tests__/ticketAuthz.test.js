@@ -58,8 +58,8 @@ describe("can", () => {
       expect(can(support, assignedToSupport, "change_status")).toBe(true);
     });
 
-    test("owner can change status on their own ticket", () => {
-      expect(can(owner, assignedToSupport, "change_status")).toBe(true);
+    test("owner cannot change status on their own ticket", () => {
+      expect(can(owner, assignedToSupport, "change_status")).toBe(false);
     });
 
     test("non-owner user cannot change status", () => {
@@ -117,9 +117,9 @@ describe("can", () => {
       expect(can(admin, unassignedTicket, "resolve")).toBe(true);
     });
 
-    test("owner can resolve their own ticket", () => {
-      expect(can(owner, unassignedTicket, "resolve")).toBe(true);
-      expect(can(owner, assignedToSupport, "resolve")).toBe(true);
+    test("owner cannot resolve their own ticket", () => {
+      expect(can(owner, unassignedTicket, "resolve")).toBe(false);
+      expect(can(owner, assignedToSupport, "resolve")).toBe(false);
     });
 
     test("support can resolve if assigned", () => {
@@ -161,8 +161,8 @@ describe("can", () => {
       expect(can(support, assignedToSupport, "close")).toBe(false);
     });
 
-    test("owner cannot close their own ticket", () => {
-      expect(can(owner, unassignedTicket, "close")).toBe(false);
+    test("owner can close their own ticket", () => {
+      expect(can(owner, unassignedTicket, "close")).toBe(true);
     });
 
     test("non-owner user cannot close", () => {
@@ -220,8 +220,8 @@ describe("can", () => {
       expect(can(support, populatedUnassignedTicket, "change_status")).toBe(false);
     });
 
-    test("owner can change status on own ticket (populated)", () => {
-      expect(can(owner, populatedAssignedTicket, "change_status")).toBe(true);
+    test("owner cannot change status on own ticket (populated)", () => {
+      expect(can(owner, populatedAssignedTicket, "change_status")).toBe(false);
     });
 
     test("non-owner user cannot change status (populated)", () => {
@@ -237,8 +237,8 @@ describe("can", () => {
       expect(can(support, populatedAssignedTicket, "resolve")).toBe(true);
     });
 
-    test("owner can resolve their own ticket (populated)", () => {
-      expect(can(owner, populatedAssignedTicket, "resolve")).toBe(true);
+    test("owner cannot resolve their own ticket (populated)", () => {
+      expect(can(owner, populatedAssignedTicket, "resolve")).toBe(false);
     });
 
     test("non-owner user cannot resolve (populated)", () => {

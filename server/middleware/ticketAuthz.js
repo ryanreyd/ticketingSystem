@@ -12,11 +12,15 @@ const can = (user, ticket, action) => {
 
   switch (action) {
     case "edit":
-    case "change_status":
     case "change_priority":
       if (isAdmin) return true;
       if (isSupport && isAssigned) return true;
       if (isOwner) return true;
+      return false;
+
+    case "change_status":
+      if (isAdmin) return true;
+      if (isSupport && isAssigned) return true;
       return false;
 
     case "claim":
@@ -25,6 +29,10 @@ const can = (user, ticket, action) => {
       return true;
 
     case "resolve":
+      if (isAdmin) return true;
+      if (isSupport && isAssigned) return true;
+      return false;
+
     case "reopen":
       if (isAdmin) return true;
       if (isOwner) return true;
@@ -33,6 +41,7 @@ const can = (user, ticket, action) => {
 
     case "close":
       if (isAdmin) return true;
+      if (isOwner) return true;
       return false;
 
     default:

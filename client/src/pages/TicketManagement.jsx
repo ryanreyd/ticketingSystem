@@ -1,9 +1,10 @@
-import { useEffect, useState, useContext, useCallback } from "react";
+import { useEffect, useState, useContext, useCallback, useMemo } from "react";
 import { useTickets } from "../hooks/useTickets";
 import { AuthContext } from "../context/AuthContext";
 import { ROLES } from "../constants/roles";
 import TicketCard from "../components/TicketManagement/TicketCard";
 import TicketDetail from "../components/TicketManagement/TicketDetail";
+import StatusTabBar from "../components/TicketManagement/StatusTabBar";
 import Modal from "../components/Modal";
 import TextInput from "../components/TextInput";
 import { FiLoader, FiPlus } from "react-icons/fi";
@@ -28,13 +29,6 @@ const TicketManagement = () => {
   const [createErrors, setCreateErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const statusOptions = [
-    { value: "open", label: "Open" },
-    { value: "in_progress", label: "In Progress" },
-    { value: "resolved", label: "Resolved" },
-    { value: "closed", label: "Closed" },
-  ];
-
   const priorityOptions = [
     { value: "low", label: "Low" },
     { value: "medium", label: "Normal" },
@@ -50,8 +44,7 @@ const TicketManagement = () => {
   const loadTicketsList = useCallback(async () => {
     try {
       setLoading(true);
-      const params = {};
-      if (statusFilter) params.status = statusFilter;
+      const params = { limit: 100 };
       if (priorityFilter) params.priority = priorityFilter;
       if (user?.role === ROLES.USER) params.createdBy = user._id;
       const data = await getTickets(params);
@@ -62,7 +55,26 @@ const TicketManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [getTickets, statusFilter, priorityFilter, user?.role, user?._id]);
+  }, [getTickets, priorityFilter, user?.role, user?._id]);
+
+  const displayedTickets = useMemo(
+    () =>
+      statusFilter
+        ? tickets.filter((t) => t.status === statusFilter)
+        : tickets,
+    [tickets, statusFilter]
+  );
+
+  const statusCounts = useMemo(() => {
+    const counts = { open: 0, in_progress: 0, resolved: 0, closed: 0, all: 0 };
+    tickets.forEach((t) => {
+      if (counts[t.status] !== undefined) {
+        counts[t.status] += 1;
+        counts.all += 1;
+      }
+    });
+    return counts;
+  }, [tickets]);
 
   useEffect(() => {
     loadTicketsList();
@@ -130,17 +142,12 @@ const TicketManagement = () => {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-3 mb-4">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">All Statuses</option>
-            {statusOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <StatusTabBar
+            activeStatus={statusFilter}
+            counts={statusCounts}
+            onChange={setStatusFilter}
+          />
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
@@ -157,7 +164,7 @@ const TicketManagement = () => {
           <div className="flex justify-center py-8">
             <FiLoader className="animate-spin text-2xl text-indigo-500" />
           </div>
-        ) : tickets.length === 0 ? (
+        ) : displayedTickets.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-sm text-gray-500 italic">No tickets found.</p>
             {user?.role === ROLES.USER && (
@@ -171,7 +178,7 @@ const TicketManagement = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tickets.map((ticket) => (
+            {displayedTickets.map((ticket) => (
               <TicketCard
                 key={ticket._id}
                 ticket={ticket}

@@ -243,11 +243,11 @@ const TicketDetail = ({ ticket, user, onClose }) => {
   const canClaim = (isAdmin || isSupport) && !activeTicket.assignedTo;
   const canEdit = isAdmin || (isSupport && isOwner) || isCreator;
   const canAssign = isAdmin;
-  const canChangeStatus = isAdmin || (isSupport && isOwner) || isCreator;
+  const canChangeStatus = isAdmin || (isSupport && isOwner);
   const canChangePriority = isAdmin || (isSupport && isOwner) || isCreator;
-  const canResolve = isAdmin || (isSupport && isOwner) || isCreator;
+  const canResolve = isAdmin || (isSupport && isOwner);
   const canReopen = isAdmin || (isSupport && isOwner) || isCreator;
-  const canClose = isAdmin;
+  const canClose = isAdmin || isCreator;
 
   const actions = [
     { label: "View Ledger", onClick: () => setShowLedger(true), disabled: false },

@@ -5,6 +5,7 @@
   "scripts": {
     "start": "nodemon server.js",
     "seed": "node seeds/runSeed.js",
+    "seed:tickets": "node seeds/seedTickets.js",
     "migrate": "node seeds/migrateUsers.js",
     "test": "jest"
   },

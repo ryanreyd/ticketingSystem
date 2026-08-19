@@ -1,4 +1,5 @@
 import Badge from "./Badge";
+import StatusProgressIndicator from "../shared/StatusProgressIndicator";
 import { formatStatus, formatPriority, priorityColor, statusColor } from "./utils";
 
 const TicketCard = ({ ticket, onClick, isSelected }) => {
@@ -12,6 +13,7 @@ const TicketCard = ({ ticket, onClick, isSelected }) => {
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-mono text-gray-500">{ticket.ticketNumber || ticket._id.slice(-6)}</span>
             <Badge color={statusColor[ticket.status] || "gray"}>{formatStatus(ticket.status)}</Badge>
+            <StatusProgressIndicator currentStatus={ticket.status} />
             <Badge color={priorityColor[ticket.priority] || "gray"}>{formatPriority(ticket.priority)}</Badge>
           </div>
           <h3 className="text-sm font-semibold text-gray-800 truncate">{ticket.title}</h3>
