@@ -30,6 +30,9 @@ const ticketSchema = new mongoose.Schema(
       ref: "User",
     },
     claimedAt: { type: Date },
+    resolvedAt: { type: Date },
+    closedAt: { type: Date },
+    resolution: { type: String, trim: true },
   },
   { timestamps: true }
 );

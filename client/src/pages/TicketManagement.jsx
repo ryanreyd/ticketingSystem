@@ -11,7 +11,7 @@ import { FiLoader, FiPlus } from "react-icons/fi";
 
 const TicketManagement = () => {
   const { user } = useContext(AuthContext);
-  const { getTickets, createTicket } = useTickets();
+  const { getTickets, createTicket, changeTicketStatus, deleteTicket } = useTickets();
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,6 +56,36 @@ const TicketManagement = () => {
       setLoading(false);
     }
   }, [getTickets, priorityFilter, user?.role, user?._id]);
+
+  const handleStatusChange = useCallback(
+    async (ticket, newStatus) => {
+      if (newStatus === ticket?.status) return;
+      try {
+        await changeTicketStatus(ticket._id, newStatus);
+        setTickets((prev) =>
+          prev.map((t) => (t._id === ticket._id ? { ...t, status: newStatus } : t))
+        );
+        setError("");
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to update status.");
+      }
+    },
+    [changeTicketStatus]
+  );
+
+  const handleDelete = useCallback(
+    async (ticket) => {
+      try {
+        await deleteTicket(ticket._id);
+        setTickets((prev) => prev.filter((t) => t._id !== ticket._id));
+        if (selectedTicket?._id === ticket._id) setSelectedTicket(null);
+        setError("");
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to delete ticket.");
+      }
+    },
+    [deleteTicket, selectedTicket?._id]
+  );
 
   const displayedTickets = useMemo(
     () =>
@@ -184,6 +214,8 @@ const TicketManagement = () => {
                 ticket={ticket}
                 onClick={setSelectedTicket}
                 isSelected={selectedTicket?._id === ticket._id}
+                onStatusChange={handleStatusChange}
+                onDelete={handleDelete}
               />
             ))}
           </div>

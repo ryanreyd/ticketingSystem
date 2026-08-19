@@ -81,24 +81,18 @@ const claimTicket = async (ticketId, user) => {
   try {
     const ticket = await Ticket.findById(ticketId).session(session);
     if (!ticket) {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Ticket not found");
       err.status = 404;
       throw err;
     }
 
     if (ticket.assignedTo) {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("This ticket has already been claimed");
       err.status = 409;
       throw err;
     }
 
     if (ticket.status === "closed" || ticket.status === "resolved") {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Cannot claim a resolved or closed ticket");
       err.status = 400;
       throw err;
@@ -154,8 +148,6 @@ const assignTicket = async (ticketId, actorId, assignedToId) => {
   try {
     const ticket = await Ticket.findById(ticketId).session(session);
     if (!ticket) {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Ticket not found");
       err.status = 404;
       throw err;
@@ -163,8 +155,6 @@ const assignTicket = async (ticketId, actorId, assignedToId) => {
 
     const assignee = await User.findById(assignedToId).session(session);
     if (!assignee || (assignee.role !== "support" && assignee.role !== "admin")) {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Assignee must be support staff or admin");
       err.status = 400;
       throw err;
@@ -203,8 +193,6 @@ const changeTicketStatus = async (ticketId, actorId, newStatus) => {
   try {
     const ticket = await Ticket.findById(ticketId).session(session);
     if (!ticket) {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Ticket not found");
       err.status = 404;
       throw err;
@@ -213,8 +201,6 @@ const changeTicketStatus = async (ticketId, actorId, newStatus) => {
     const previousStatus = ticket.status;
 
     if (previousStatus === newStatus) {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Status is already set to this value");
       err.status = 400;
       throw err;
@@ -231,8 +217,6 @@ const changeTicketStatus = async (ticketId, actorId, newStatus) => {
 
     const allowed = allowedTransitions[previousStatus] || [];
     if (!allowed.includes(newStatus)) {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error(`Invalid status transition from ${previousStatus} to ${newStatus}`);
       err.status = 400;
       throw err;
@@ -259,7 +243,7 @@ const changeTicketStatus = async (ticketId, actorId, newStatus) => {
       action: "status_changed",
       field: "status",
       oldValue: previousStatus,
-      newValue,
+      newValue: newStatus,
       description: `Status changed ${previousStatus} → ${newStatus}`,
       session,
     });
@@ -282,8 +266,6 @@ const changeTicketPriority = async (ticketId, actorId, newPriority) => {
   try {
     const ticket = await Ticket.findById(ticketId).session(session);
     if (!ticket) {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Ticket not found");
       err.status = 404;
       throw err;
@@ -292,8 +274,6 @@ const changeTicketPriority = async (ticketId, actorId, newPriority) => {
     const previousPriority = ticket.priority;
 
     if (previousPriority === newPriority) {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Priority is already set to this value");
       err.status = 400;
       throw err;
@@ -308,7 +288,7 @@ const changeTicketPriority = async (ticketId, actorId, newPriority) => {
       action: "priority_changed",
       field: "priority",
       oldValue: previousPriority,
-      newValue,
+      newValue: newPriority,
       description: `Priority changed ${previousPriority} → ${newPriority}`,
       session,
     });
@@ -331,16 +311,12 @@ const resolveTicket = async (ticketId, actorId, resolution) => {
   try {
     const ticket = await Ticket.findById(ticketId).session(session);
     if (!ticket) {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Ticket not found");
       err.status = 404;
       throw err;
     }
 
     if (ticket.status === "closed") {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Cannot resolve a closed ticket");
       err.status = 400;
       throw err;
@@ -383,8 +359,6 @@ const reopenTicket = async (ticketId, actorId) => {
   try {
     const ticket = await Ticket.findById(ticketId).session(session);
     if (!ticket) {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Ticket not found");
       err.status = 404;
       throw err;
@@ -393,8 +367,6 @@ const reopenTicket = async (ticketId, actorId) => {
     const previousStatus = ticket.status;
 
     if (previousStatus !== "resolved" && previousStatus !== "closed") {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Only resolved or closed tickets can be reopened");
       err.status = 400;
       throw err;
@@ -435,16 +407,12 @@ const closeTicket = async (ticketId, actorId) => {
   try {
     const ticket = await Ticket.findById(ticketId).session(session);
     if (!ticket) {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Ticket not found");
       err.status = 404;
       throw err;
     }
 
     if (ticket.status === "closed") {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Ticket is already closed");
       err.status = 400;
       throw err;
@@ -486,8 +454,6 @@ const editTicket = async (ticketId, actorId, updates) => {
   try {
     const ticket = await Ticket.findById(ticketId).session(session);
     if (!ticket) {
-      await session.abortTransaction();
-      session.endSession();
       const err = new Error("Ticket not found");
       err.status = 404;
       throw err;
@@ -514,8 +480,6 @@ const editTicket = async (ticketId, actorId, updates) => {
 
         const allowed = allowedTransitions[oldValue] || [];
         if (!allowed.includes(newValue)) {
-          await session.abortTransaction();
-          session.endSession();
           const err = new Error(`Invalid status transition from ${oldValue} to ${newValue}`);
           err.status = 400;
           throw err;

@@ -72,17 +72,33 @@ const seedTickets = async () => {
 
   const tickets = [];
   for (let i = 0; i < 20; i++) {
-    tickets.push({
+    const status = STATUSES[i % STATUSES.length];
+    const createdAt = new Date(Date.now() - (20 - i) * 86400000);
+    const ticket = {
       title: TICKET_TITLES[i],
       description: `Reproducible steps and details for ticket ${i + 1}.`,
-      status: STATUSES[i % STATUSES.length],
+      status,
       priority: PRIORITIES[i % PRIORITIES.length],
       category: CATEGORIES[i % CATEGORIES.length],
       createdBy: i % 3 === 0 ? admin._id : support._id,
       assignedTo: i % 2 === 0 ? support._id : admin._id,
-      createdAt: new Date(Date.now() - (20 - i) * 86400000),
-      updatedAt: new Date(Date.now() - (20 - i) * 86400000),
-    });
+      createdAt,
+      updatedAt: createdAt,
+    };
+
+    // Backfill resolution timestamps for already-resolved/closed seeded tickets
+    // so the card can show time-to-resolve immediately.
+    if (status === "resolved" || status === "closed") {
+      ticket.resolvedAt = new Date(createdAt.getTime() + 3 * 36e5);
+    }
+    if (status === "closed") {
+      ticket.closedAt = new Date(createdAt.getTime() + 5 * 36e5);
+    }
+    if (status === "resolved") {
+      ticket.resolution = `Resolved during seeding for ticket ${i + 1}.`;
+    }
+
+    tickets.push(ticket);
   }
 
   await Ticket.insertMany(tickets);

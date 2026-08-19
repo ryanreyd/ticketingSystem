@@ -1,38 +1,39 @@
-const STATUS_COLORS = {
-  open: "bg-sky-500",
-  in_progress: "bg-indigo-500",
-  pending: "bg-gray-400",
-  resolved: "bg-emerald-500",
-  closed: "bg-slate-400",
-  reopened: "bg-orange-400",
+import React from "react";
+
+const STATUS_LABELS = {
+  open: "Open",
+  in_progress: "In Progress",
+  pending: "Pending",
+  resolved: "Resolved",
+  closed: "Closed",
+  reopened: "Reopened",
 };
 
 const DEFAULT_STATUS_LIST = ["open", "in_progress", "resolved", "closed"];
 
+/**
+ * Compact status stepper. Renders a row of segmented bars — filled up to the
+ * current status position — to communicate workflow progress at a glance.
+ * The colour meaning of the status itself is conveyed separately (dot + label)
+ * so this indicator stays a neutral positional cue.
+ */
 const StatusProgressIndicator = ({ currentStatus, statusList = DEFAULT_STATUS_LIST }) => {
-  const currentIndex = statusList.indexOf(currentStatus);
+  const activeIndex = statusList.indexOf(currentStatus);
+  const index = activeIndex === -1 ? 0 : activeIndex;
 
   return (
     <div
-      className="inline-flex items-center"
-      title={`Status: ${currentStatus || "unknown"}`}
+      className="flex items-center gap-[3px]"
+      title={`Status: ${STATUS_LABELS[currentStatus] || currentStatus}`}
     >
-      {statusList.map((status, index) => {
-        const isReached = currentIndex !== -1 && index <= currentIndex;
-        const colorClass = STATUS_COLORS[status] || "bg-gray-400";
-        const fillClass = isReached ? colorClass : "bg-gray-200";
-
-        return (
-          <span key={status} className="flex items-center">
-            {index > 0 && (
-              <span
-                className={`h-0.5 w-3 ${isReached ? colorClass : "bg-gray-200"}`}
-              />
-            )}
-            <span className={`block w-2 h-2 rounded-full ${fillClass}`} />
-          </span>
-        );
-      })}
+      {statusList.map((status, i) => (
+        <div
+          key={status}
+          className={`h-[3px] w-4 rounded-full transition-colors ${
+            i <= index ? "bg-slate-800" : "bg-slate-200"
+          }`}
+        />
+      ))}
     </div>
   );
 };
