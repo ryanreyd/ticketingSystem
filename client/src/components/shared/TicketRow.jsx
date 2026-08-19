@@ -111,6 +111,7 @@ const TicketRow = ({
           </select>
         ) : (
           <Avatar
+            seed={ticket.assignedTo?._id}
             initials={ticket.assignedTo?.fullname?.slice(0, 2)}
             size={isDense ? "xs" : "sm"}
           />

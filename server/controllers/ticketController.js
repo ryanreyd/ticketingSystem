@@ -36,8 +36,22 @@ exports.getTickets = async (req, res, next) => {
 
     const [tickets, total] = await Promise.all([
       Ticket.find(filter)
-        .populate("createdBy", "fullname email")
-        .populate("assignedTo", "fullname email")
+        .populate({
+          path: "createdBy",
+          select: "fullname email branch department",
+          populate: [
+            { path: "branch", select: "name code" },
+            { path: "department", select: "name code" },
+          ],
+        })
+        .populate({
+          path: "assignedTo",
+          select: "fullname email branch department",
+          populate: [
+            { path: "branch", select: "name code" },
+            { path: "department", select: "name code" },
+          ],
+        })
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit)),
@@ -83,7 +97,14 @@ exports.createTicket = async (req, res, next) => {
       req.user._id
     );
 
-    const populated = await ticket.populate("createdBy", "fullname email");
+    const populated = await ticket.populate({
+      path: "createdBy",
+      select: "fullname email branch department",
+      populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ],
+    });
     res.status(201).json(populated);
   } catch (err) {
     if (err.name === "ValidationError") {
@@ -98,8 +119,14 @@ exports.updateTicket = async (req, res, next) => {
     const updates = req.body;
     const ticket = await editTicket(req.params.id, req.user._id, updates);
     const populated = await ticket.populate([
-      { path: "createdBy", select: "fullname email" },
-      { path: "assignedTo", select: "fullname email" },
+      { path: "createdBy", select: "fullname email branch department", populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ]},
+      { path: "assignedTo", select: "fullname email branch department", populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ]},
     ]);
     res.json(populated);
   } catch (err) {
@@ -131,7 +158,14 @@ exports.deleteTicket = async (req, res, next) => {
 exports.claimTicket = async (req, res, next) => {
   try {
     const ticket = await claimTicket(req.params.id, req.user);
-    const populated = await ticket.populate("createdBy", "fullname email");
+    const populated = await ticket.populate({
+      path: "createdBy",
+      select: "fullname email branch department",
+      populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ],
+    });
     res.json(populated);
   } catch (err) {
     if (err.name === "CastError") {
@@ -150,7 +184,14 @@ exports.assignTicket = async (req, res, next) => {
     }
 
     const ticket = await assignTicket(req.params.id, req.user._id, assignedTo);
-    const populated = await ticket.populate("createdBy", "fullname email");
+    const populated = await ticket.populate({
+      path: "createdBy",
+      select: "fullname email branch department",
+      populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ],
+    });
     res.json(populated);
   } catch (err) {
     if (err.name === "CastError") {
@@ -170,8 +211,14 @@ exports.changeTicketStatus = async (req, res, next) => {
 
     const ticket = await changeTicketStatus(req.params.id, req.user._id, status);
     const populated = await ticket.populate([
-      { path: "createdBy", select: "fullname email" },
-      { path: "assignedTo", select: "fullname email" },
+      { path: "createdBy", select: "fullname email branch department", populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ]},
+      { path: "assignedTo", select: "fullname email branch department", populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ]},
     ]);
     res.json(populated);
   } catch (err) {
@@ -192,8 +239,14 @@ exports.changeTicketPriority = async (req, res, next) => {
 
     const ticket = await changeTicketPriority(req.params.id, req.user._id, priority);
     const populated = await ticket.populate([
-      { path: "createdBy", select: "fullname email" },
-      { path: "assignedTo", select: "fullname email" },
+      { path: "createdBy", select: "fullname email branch department", populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ]},
+      { path: "assignedTo", select: "fullname email branch department", populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ]},
     ]);
     res.json(populated);
   } catch (err) {
@@ -209,8 +262,14 @@ exports.resolveTicket = async (req, res, next) => {
     const { resolution } = req.body;
     const ticket = await resolveTicket(req.params.id, req.user._id, resolution);
     const populated = await ticket.populate([
-      { path: "createdBy", select: "fullname email" },
-      { path: "assignedTo", select: "fullname email" },
+      { path: "createdBy", select: "fullname email branch department", populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ]},
+      { path: "assignedTo", select: "fullname email branch department", populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ]},
     ]);
     res.json(populated);
   } catch (err) {
@@ -225,8 +284,14 @@ exports.reopenTicket = async (req, res, next) => {
   try {
     const ticket = await reopenTicket(req.params.id, req.user._id);
     const populated = await ticket.populate([
-      { path: "createdBy", select: "fullname email" },
-      { path: "assignedTo", select: "fullname email" },
+      { path: "createdBy", select: "fullname email branch department", populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ]},
+      { path: "assignedTo", select: "fullname email branch department", populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ]},
     ]);
     res.json(populated);
   } catch (err) {
@@ -241,8 +306,14 @@ exports.closeTicket = async (req, res, next) => {
   try {
     const ticket = await closeTicket(req.params.id, req.user._id);
     const populated = await ticket.populate([
-      { path: "createdBy", select: "fullname email" },
-      { path: "assignedTo", select: "fullname email" },
+      { path: "createdBy", select: "fullname email branch department", populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ]},
+      { path: "assignedTo", select: "fullname email branch department", populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ]},
     ]);
     res.json(populated);
   } catch (err) {

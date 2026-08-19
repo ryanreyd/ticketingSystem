@@ -40,8 +40,22 @@ const createLedgerEntry = async ({
 
 const getTicketWithAccess = async (ticketId, user) => {
   const ticket = await Ticket.findById(ticketId)
-    .populate("createdBy", "fullname email role")
-    .populate("assignedTo", "fullname email role");
+    .populate({
+      path: "createdBy",
+      select: "fullname email role branch department",
+      populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ],
+    })
+    .populate({
+      path: "assignedTo",
+      select: "fullname email role branch department",
+      populate: [
+        { path: "branch", select: "name code" },
+        { path: "department", select: "name code" },
+      ],
+    });
 
   if (!ticket) {
     const err = new Error("Ticket not found");

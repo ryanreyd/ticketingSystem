@@ -57,4 +57,4 @@ const timeAgo = (date) => {
   return formatDate(date);
 };
 
-export { formatStatus, formatPriority, priorityColor, statusColor, timeAgo };
+export { formatStatus, formatPriority, priorityColor, statusColor, timeAgo, formatDate };
