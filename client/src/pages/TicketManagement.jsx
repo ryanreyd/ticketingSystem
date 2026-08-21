@@ -11,7 +11,7 @@ import { FiLoader, FiPlus } from "react-icons/fi";
 
 const TicketManagement = () => {
   const { user } = useContext(AuthContext);
-  const { getTickets, createTicket, changeTicketStatus, deleteTicket } = useTickets();
+  const { getTickets, createTicket, changeTicketStatus, deleteTicket, claimTicket } = useTickets();
   const [tickets, setTickets] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -85,6 +85,19 @@ const TicketManagement = () => {
       }
     },
     [deleteTicket, selectedTicket?._id]
+  );
+
+  const handleClaim = useCallback(
+    async (ticket) => {
+      try {
+        await claimTicket(ticket._id);
+        setError("");
+        loadTicketsList();
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to claim ticket.");
+      }
+    },
+    [claimTicket, loadTicketsList]
   );
 
   const displayedTickets = useMemo(
@@ -216,6 +229,8 @@ const TicketManagement = () => {
                 isSelected={selectedTicket?._id === ticket._id}
                 onStatusChange={handleStatusChange}
                 onDelete={handleDelete}
+                user={user}
+                onClaim={handleClaim}
               />
             ))}
           </div>

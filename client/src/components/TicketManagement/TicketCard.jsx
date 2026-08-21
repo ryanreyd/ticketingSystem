@@ -23,6 +23,7 @@ import {
   timeAgo,
   formatDate,
 } from "./utils";
+  import { ROLES } from "../../constants/roles";
 
 const STATUS_OPTIONS = [
   { value: "open", label: "Open" },
@@ -30,6 +31,15 @@ const STATUS_OPTIONS = [
   { value: "resolved", label: "Resolved" },
   { value: "closed", label: "Closed" },
 ];
+
+const ALLOWED_TRANSITIONS = {
+  open: ["in_progress", "pending", "closed"],
+  in_progress: ["pending", "resolved", "closed", "reopened"],
+  pending: ["in_progress", "resolved", "closed"],
+  reopened: ["in_progress", "pending", "resolved", "closed"],
+  resolved: ["closed", "reopened"],
+  closed: ["reopened"],
+};
 
 const MAX_DESCRIPTION_LENGTH = 120;
 const ACTION_INTERACTION_CLASS = "ticket-card-action";
@@ -59,36 +69,71 @@ const Avatar = ({ name, tone, size = "h-6 w-6 text-[10px]" }) => (
   </div>
 );
 
-const TicketCard = ({ ticket, onClick, isSelected, onStatusChange, onDelete }) => {
+const TicketCard = ({
+  ticket,
+  onClick,
+  isSelected,
+  onStatusChange,
+  onDelete,
+  user,
+  onClaim,
+}) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
-  const ticketNumber = ticket?.ticketNumber || (ticket?._id ? `…${ticket._id.slice(-6)}` : "—");
+  const ticketNumber =
+    ticket?.ticketNumber || (ticket?._id ? `…${ticket._id.slice(-6)}` : "—");
 
   const description = ticket?.description || "";
   const hasDescription = Boolean(description);
   const needsToggle = description.length > MAX_DESCRIPTION_LENGTH;
   const displayedDescription = useMemo(
-    () => (isExpanded ? description : truncate(description, MAX_DESCRIPTION_LENGTH)),
-    [description, isExpanded]
+    () =>
+      isExpanded ? description : truncate(description, MAX_DESCRIPTION_LENGTH),
+    [description, isExpanded],
   );
 
   const pMeta = priorityMeta[ticket?.priority] || priorityMeta.low;
 
-  const branchName = ticket?.createdBy?.branch?.name || ticket?.createdBy?.branch?.code || "";
-  const departmentName = ticket?.createdBy?.department?.name || ticket?.createdBy?.department?.code || "";
+  const isOwner = user && ticket?.assignedTo && ticket.assignedTo._id === user._id;
+  const isCreator = user && ticket?.createdBy && ticket.createdBy._id === user._id;
+  const isAdmin = user?.role === ROLES.ADMIN;
+  const isSupport = user?.role === ROLES.SUPPORT;
+
+  const canClaim = (isAdmin || isSupport) && !ticket?.assignedTo;
+  const _canEdit = isAdmin || (isSupport && isOwner) || isCreator;
+  const _canAssign = isAdmin;
+  const canChangeStatus = isAdmin || (isSupport && isOwner);
+  const _canChangePriority = isAdmin || (isSupport && isOwner) || isCreator;
+  const _canResolve = isAdmin || (isSupport && isOwner);
+  const _canReopen = isAdmin || (isSupport && isOwner) || isCreator;
+  const _canClose = isAdmin || isCreator;
+
+  const branchName =
+    ticket?.createdBy?.branch?.name || ticket?.createdBy?.branch?.code || "";
+  const departmentName =
+    ticket?.createdBy?.department?.name ||
+    ticket?.createdBy?.department?.code ||
+    "";
   const showLocation = Boolean(branchName || departmentName);
+
+  const availableStatuses = useMemo(() => {
+    if (!ticket?.status) return [];
+    const allowed = ALLOWED_TRANSITIONS[ticket.status] || [];
+    return STATUS_OPTIONS.filter((opt) => allowed.includes(opt.value));
+  }, [ticket?.status]);
 
   // Resolution time lives inside the status Badge, so compute it here only.
   // Guarded so non-terminal statuses (or missing timestamps) never render
   // "0h"/"NaN".
   const resolutionHrs = useMemo(() => {
     if (!ticket) return null;
-    const isTerminal = ticket.status === "resolved" || ticket.status === "closed";
+    const isTerminal =
+      ticket.status === "resolved" || ticket.status === "closed";
     if (!isTerminal || !ticket.resolvedAt || !ticket.createdAt) return null;
     const diff = Math.round(
-      (new Date(ticket.resolvedAt) - new Date(ticket.createdAt)) / 36e5
+      (new Date(ticket.resolvedAt) - new Date(ticket.createdAt)) / 36e5,
     );
     return Number.isFinite(diff) && diff > 0 ? diff : null;
   }, [ticket]);
@@ -96,8 +141,15 @@ const TicketCard = ({ ticket, onClick, isSelected, onStatusChange, onDelete }) =
   const menuActions = useMemo(() => {
     const actions = [];
 
-    if (onStatusChange) {
-      STATUS_OPTIONS.forEach((opt) => {
+    if (canClaim && onClaim) {
+      actions.push({
+        label: "Claim Ticket",
+        onClick: () => onClaim(ticket),
+      });
+    }
+
+    if (canChangeStatus && onStatusChange) {
+      availableStatuses.forEach((opt) => {
         const isActive = opt.value === ticket?.status;
         actions.push({
           label: opt.label,
@@ -111,7 +163,7 @@ const TicketCard = ({ ticket, onClick, isSelected, onStatusChange, onDelete }) =
       });
     }
 
-    if (onDelete) {
+    if (isAdmin && onDelete) {
       if (actions.length) actions.push({ type: "separator" });
       actions.push({
         label: "Delete Ticket",
@@ -122,7 +174,7 @@ const TicketCard = ({ ticket, onClick, isSelected, onStatusChange, onDelete }) =
     }
 
     return actions;
-  }, [onStatusChange, onDelete, ticket]);
+  }, [canClaim, onClaim, canChangeStatus, onStatusChange, availableStatuses, ticket, isAdmin, onDelete]);
 
   const hasActions = menuActions.length > 0;
 
@@ -131,7 +183,7 @@ const TicketCard = ({ ticket, onClick, isSelected, onStatusChange, onDelete }) =
       if (e.target.closest(`.${ACTION_INTERACTION_CLASS}`)) return;
       onClick?.(ticket);
     },
-    [ticket, onClick]
+    [ticket, onClick],
   );
 
   const handleToggleExpand = useCallback(() => {
@@ -260,7 +312,7 @@ const TicketCard = ({ ticket, onClick, isSelected, onStatusChange, onDelete }) =
                   {ticket?.createdBy?.fullname || "Unknown"}
                 </span>
               </div>
-              {ticket?.assignedTo && (
+              {ticket?.assignedTo ? (
                 <>
                   <LuArrowRight size={11} className="mx-0.5 text-slate-300" />
                   <div
@@ -278,6 +330,10 @@ const TicketCard = ({ ticket, onClick, isSelected, onStatusChange, onDelete }) =
                     </span>
                   </div>
                 </>
+              ) : (
+                <span className="text-[10px] text-gray-400 italic">
+                  Unassigned
+                </span>
               )}
               {ticket?.status === "resolved" && (
                 <span className="flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-medium text-emerald-600">
@@ -289,7 +345,10 @@ const TicketCard = ({ ticket, onClick, isSelected, onStatusChange, onDelete }) =
 
             <div className="flex items-center gap-1">
               {hasActions && (
-                <span className={ACTION_INTERACTION_CLASS} onClick={(e) => e.stopPropagation()}>
+                <span
+                  className={ACTION_INTERACTION_CLASS}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <ActionMenu actions={menuActions} />
                 </span>
               )}
