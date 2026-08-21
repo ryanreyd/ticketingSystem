@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import Badge from "./Badge";
-import ActionMenu from "./ActionMenu";
+import DropdownMenu from "../../components/DropdownMenu";
 import ConfirmDialog from "../ConfirmDialog";
 import StatusProgressIndicator from "../shared/StatusProgressIndicator";
 import { FiClock } from "react-icons/fi";
@@ -349,7 +349,7 @@ const TicketCard = ({
                   className={ACTION_INTERACTION_CLASS}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <ActionMenu actions={menuActions} />
+                  <DropdownMenu actions={menuActions} />
                 </span>
               )}
               <span

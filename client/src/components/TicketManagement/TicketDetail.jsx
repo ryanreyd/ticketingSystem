@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { FiX } from "react-icons/fi";
-import ActionMenu from "./ActionMenu";
+import DropdownMenu from "../../components/DropdownMenu";
 import Badge from "./Badge";
 import TicketLedger from "./TicketLedger";
 import CommentSection from "./CommentSection";
@@ -294,7 +294,7 @@ const TicketDetail = ({ ticket, user, onClose }) => {
           )}
         </div>
         <div className="flex items-center gap-1">
-          <ActionMenu actions={actions} />
+          <DropdownMenu actions={actions} />
           <button
             onClick={onClose}
             className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"

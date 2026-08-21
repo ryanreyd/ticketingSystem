@@ -1,101 +1,170 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const BUFFER = 12;
 
-const findScrollableParent = (el) => {
-  let node = el.parentElement;
-  while (node) {
-    if (node === document.body || node === document.documentElement) return window;
-    const style = getComputedStyle(node);
-    if (style.overflowY === "auto" || style.overflowY === "scroll") return node;
-    node = node.parentElement;
-  }
-  return window;
-};
+const KEBAB_SVG = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="5" r="1.5" />
+    <circle cx="12" cy="12" r="1.5" />
+    <circle cx="12" cy="19" r="1.5" />
+  </svg>
+);
 
-const DropdownMenu = ({ trigger, children, align = "right" }) => {
+const DropdownMenu = ({ trigger, triggerClassName = "", actions, children, align = "right" }) => {
   const [open, setOpen] = useState(false);
-  const [placeTop, setPlaceTop] = useState(false);
-  const containerRef = useRef(null);
+  const [dropdownStyle, setDropdownStyle] = useState({});
+
+  const triggerRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  const measureAndPosition = () => {
-    const container = containerRef.current;
-    const dropdown = dropdownRef.current;
-    if (!container || !dropdown) return;
-
-    const triggerRect = container.getBoundingClientRect();
-    const dropdownRect = dropdown.getBoundingClientRect();
-    const dropdownHeight = dropdownRect.height || dropdown.offsetHeight || 200;
-
-    const spaceBelow = window.innerHeight - triggerRect.bottom;
-    const spaceAbove = triggerRect.top;
-
-    setPlaceTop(spaceBelow < dropdownHeight + BUFFER && spaceAbove > dropdownHeight);
-  };
-
   useEffect(() => {
-    if (!open) {
-      setPlaceTop(false);
-      return;
-    }
+    if (!open) return;
 
-    let raf, timeout;
+    const positionDropdown = () => {
+      const triggerEl = triggerRef.current;
+      const dropdown = dropdownRef.current;
+      if (!triggerEl || !dropdown) return;
 
-    raf = requestAnimationFrame(() => {
-      measureAndPosition();
-    });
+      const triggerRect = triggerEl.getBoundingClientRect();
+      const dropdownHeight = dropdown.offsetHeight;
 
-    timeout = setTimeout(() => {
-      measureAndPosition();
-    }, 50);
+      const spaceBelow = window.innerHeight - triggerRect.bottom;
+      const spaceAbove = triggerRect.top;
 
-    const scrollEl = containerRef.current ? findScrollableParent(containerRef.current) : window;
+      let top;
+      if (spaceBelow < dropdownHeight + BUFFER && spaceAbove > dropdownHeight) {
+        top = triggerRect.top - dropdownHeight - BUFFER;
+      } else {
+        top = triggerRect.bottom + BUFFER;
+      }
 
-    const handleScroll = () => measureAndPosition();
-    const handleResize = () => measureAndPosition();
+      const style = { position: "fixed", top: `${top}px` };
+      if (align === "right") {
+        style.right = `${window.innerWidth - triggerRect.right}px`;
+      } else {
+        style.left = `${triggerRect.left}px`;
+      }
 
-    scrollEl.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleResize);
+      setDropdownStyle(style);
+    };
+
+    const raf = requestAnimationFrame(positionDropdown);
+    const timeout = setTimeout(positionDropdown, 50);
+
+    window.addEventListener("resize", positionDropdown);
+    window.addEventListener("scroll", positionDropdown, { passive: true });
 
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(timeout);
-      scrollEl.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("resize", positionDropdown);
+      window.removeEventListener("scroll", positionDropdown);
     };
-  }, [open]);
+  }, [open, align]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setOpen(false);
+      const triggerEl = triggerRef.current;
+      const dropdown = dropdownRef.current;
+      if (
+        (triggerEl && triggerEl.contains(event.target)) ||
+        (dropdown && dropdown.contains(event.target))
+      ) {
+        return;
       }
+      setOpen(false);
     };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-    if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, []);
+
+  const triggerRect = triggerRef.current?.getBoundingClientRect();
+  const initialStyle = triggerRect
+    ? {
+        position: "fixed",
+        top: `${triggerRect.bottom + BUFFER}px`,
+        ...(align === "right"
+          ? { right: `${window.innerWidth - triggerRect.right}px` }
+          : { left: `${triggerRect.left}px` }),
+      }
+    : {};
+
+  const renderTrigger = () => {
+    if (trigger) {
+      return (
+        <div ref={triggerRef} onClick={() => setOpen(!open)} className="cursor-pointer">
+          {trigger}
+        </div>
+      );
     }
-  }, [open]);
+    return (
+      <button
+        type="button"
+        ref={triggerRef}
+        onClick={() => setOpen(!open)}
+        className={`p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition ${triggerClassName}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        {KEBAB_SVG}
+      </button>
+    );
+  };
 
   return (
-    <div className="relative" ref={containerRef}>
-      <div onClick={() => setOpen(!open)} className="cursor-pointer">
-        {trigger}
-      </div>
-      {open && (
-        <div
-          ref={dropdownRef}
-          className={`absolute z-50 w-48 bg-white border border-gray-100 rounded-xl shadow-xl py-1.5 transition-all duration-150 ${
-            align === "right" ? "right-0" : "left-0"
-          } ${
-            placeTop ? "bottom-full mb-1.5" : "top-full mt-1.5"
-          }`}
-        >
-          {children}
-        </div>
-      )}
+    <div className="relative">
+      {renderTrigger()}
+      {open &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            className="w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-[9999] py-1 text-sm"
+            role="menu"
+            style={{ ...initialStyle, ...dropdownStyle }}
+          >
+            {actions
+              ? actions.map((action, idx) => {
+                  if (action.type === "separator") {
+                    return <div key={`sep-${idx}`} className="border-t border-gray-100 my-1" />;
+                  }
+                  const isDestructive = action.destructive;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        action.onClick();
+                        setOpen(false);
+                      }}
+                      disabled={action.disabled}
+                      className={`w-full text-left px-4 py-2 transition flex items-center justify-between ${
+                        isDestructive
+                          ? "text-red-600 hover:bg-red-50"
+                          : "text-gray-700 hover:bg-gray-50"
+                      } ${action.disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                      role="menuitem"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        {action.icon}
+                        <span>{action.label}</span>
+                      </span>
+                      {action.shortcut && <span className="text-xs text-gray-400">{action.shortcut}</span>}
+                    </button>
+                  );
+                })
+              : children}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
